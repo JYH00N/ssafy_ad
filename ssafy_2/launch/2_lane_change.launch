@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="ssafy_2" type="2_2_mgeo_pub.py" name="mgeo_pub"  />
+    <node pkg="ssafy_2" type="2_4_lane_change_1.py" name="lane_change" />
+    <!-- <node pkg="ssafy_2" type="2_4_lane_change_2.py" name="lane_change" /> -->
+
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find ssafy_2)/rviz/kcity_rviz.rviz" />
+</launch>
