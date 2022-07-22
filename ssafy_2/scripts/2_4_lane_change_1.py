@@ -62,7 +62,7 @@ class lc_path_pub :
                 global_obj,local_obj = self.calc_vaild_obj([self.status_msg.position.x,self.status_msg.position.y,(self.status_msg.heading)/180*pi])
                 self.local_path_make(global_path)
 
-                self.Check_Object(self.local_path_msg,global_obj,local_obj)
+                self.check_object(self.local_path_msg,global_obj,local_obj)
                 
                 if self.object[0] == True:
                     if global_path != self.lc_1:
@@ -158,7 +158,7 @@ class lc_path_pub :
 
         return global_object_info,loal_object_info
 
-    def Check_Object(self,ref_path,global_vaild_object,local_vaild_object): ## 경로상의 장애물 유무 확인 (차량, 사람, 정지선 신호) ##
+    def check_object(self,ref_path,global_vaild_object,local_vaild_object): ## 경로상의 장애물 유무 확인 (차량, 사람, 정지선 신호) ##
         self.object=[False,0]
         if len(global_vaild_object) >0  :
             min_rel_distance=float('inf')
