@@ -54,7 +54,9 @@ class GPSIMUParser:
         self.odom_msg.pose.pose.position.z = 0
         self.odom_pub.publish(self.odom_msg)
         os.system('clear')
-        print(self.odom_msg)
+        print(' x : ', self.odom_msg.pose.pose.position.x)
+        print(' y : ', self.odom_msg.pose.pose.position.y)
+        print(' heading : ', self.yaw)
 
     def convertLL2UTM(self):    
         xy_zone = self.proj_UTM(self.lon, self.lat)
@@ -68,10 +70,7 @@ class GPSIMUParser:
         self.odom_msg.pose.pose.orientation.z = data.orientation.z
         self.odom_msg.pose.pose.orientation.w = data.orientation.w
         quaternion=(data.orientation.x,data.orientation.y,data.orientation.z,data.orientation.w)
-        roll,pitch,yaw=euler_from_quaternion(quaternion)
-        roll_deg=roll/pi*180
-        pitch_deg=pitch/pi*180
-        yaw_deg= yaw/pi*180
+        self.roll,self.pitch,self.yaw=euler_from_quaternion(quaternion)
         self.prev_time=rospy.get_rostime()
 
 
