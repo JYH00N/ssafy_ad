@@ -10,10 +10,9 @@ from ssafy_1.msg import student
 # 노드 실행 순서 
 # 1. publisher 생성
 # 2. ROS 노드 이름 선언
-# 3. 송신 될 메세지 변수 생성
-# 4. 코드 반복 시간 설정 및 반복 실행
-# 5. 송신 될 메세지 터미널 창 출력
-# 6. /my_name 메세지 Publish
+# 3. 코드 반복 시간 설정 및 반복 실행
+# 4. 송신 될 메세지 변수 생성 및 터미널 창 출력
+# 5. /my_name 메세지 Publish
 
 def talker():
     #TODO: (1) publisher 생성
@@ -21,19 +20,18 @@ def talker():
 
     #TODO: (2) ROS 노드 이름 선언
     rospy.init_node('my_name_talker', anonymous=True)
+
     count = 0
 
-    #TODO: (3) 송신 될 String 메세지 변수 생성
-    my_name = student()
-    my_name.first_name = 'moon'
-    my_name.last_name = 'daeyoung'
-    my_name.age = 26
-    my_name.score = 100
-
-    #TODO: (4) 코드 반복 시간 설정 및 반복 실행    
+    #TODO: (3) 코드 반복 시간 설정 및 반복 실행    
     rate = rospy.Rate(1) # 1 hz
     while not rospy.is_shutdown():
-        #TODO: (5) 송신 될 String 메세지 터미널 창 출력 
+        #TODO: (4) 송신 될 메세지 변수 생성 및 터미널 창 출력 
+        my_name = student()
+        my_name.first_name = 'moon'
+        my_name.last_name = 'daeyoung'
+        my_name.age = 26
+        my_name.score = 100
         rospy.loginfo('\n my name : %s %s \n my age : %i \n SSAFY score : %i', my_name.first_name,my_name.last_name,my_name.age,my_name.score)
 
         #TODO: (5) /my_name 메세지 Publish 

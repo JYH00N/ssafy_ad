@@ -19,6 +19,7 @@ def talker():
 
     #TODO: (2) ROS 노드 이름 선언
     rospy.init_node('ros_talker', anonymous=True)    
+    
     count = 0
 
     #TODO: (3) 코드 반복 시간 설정 및 반복 실행    
