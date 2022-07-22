@@ -5,8 +5,8 @@ from std_msgs.msg import String
 from morai_msgs.msg import ScenarioLoad
 from morai_msgs.srv import MoraiScenarioLoadSrv
 
-# MoraiEventCmd_client 는 Ego 차량의 상태를 제어하는 Client Node 작성 예제입니다.
-# Ego 차량의 상태(전조등, 방향 지시등, 차량 Gear, 차량 제어 Mode)제어 메세지 송신 후 결과 값을 반환하는 Client Node 를 생성 합니다.
+# MoraiSL_client 는 Simulator의 시나리오를 제어하는 Client Node 작성 예제입니다.
+# Simulatord의 시나리오 제어 메세지 송신 후 결과 값을 반환하는 Client Node 를 생성 합니다.
 
 # 노드 실행 순서 
 # 1. Service 가 생성 대기 함수 선언
