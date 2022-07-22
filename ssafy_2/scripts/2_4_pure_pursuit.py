@@ -34,37 +34,10 @@ class pure_pursuit :
         while not rospy.is_shutdown():
 
             if self.is_path ==True and self.is_odom==True  :
-                
-                vehicle_position=self.current_postion
-                self.is_look_forward_point= False
 
-                translation=[vehicle_position.x, vehicle_position.y]
-
-                t=np.array([
-                        [cos(self.vehicle_yaw), -sin(self.vehicle_yaw),translation[0]],
-                        [sin(self.vehicle_yaw),cos(self.vehicle_yaw),translation[1]],
-                        [0                    ,0                    ,1            ]])
-
-                det_t=np.array([
-                       [t[0][0],t[1][0],-(t[0][0]*translation[0]+t[1][0]*translation[1])],
-                       [t[0][1],t[1][1],-(t[0][1]*translation[0]+t[1][1]*translation[1])],
-                       [0      ,0      ,1                                               ]])
-
-                for num,i in enumerate(self.path.poses) :
-                    path_point=i.pose.position
-
-                    global_path_point=[path_point.x,path_point.y,1]
-                    local_path_point=det_t.dot(global_path_point)           
-                    if local_path_point[0]>0 :
-                        dis=sqrt(pow(local_path_point[0],2)+pow(local_path_point[1],2))
-                        if dis>= self.lfd :
-                            self.forward_point=path_point
-                            self.is_look_forward_point=True
-                            break
-                
-                theta=atan2(local_path_point[1],local_path_point[0])
+                steering = self.calc_pure_pursuit()
                 if self.is_look_forward_point :
-                    self.ctrl_cmd_msg.steering=atan2((2*self.vehicle_length*sin(theta)),self.lfd)
+                    self.ctrl_cmd_msg.steering = steering
                     self.ctrl_cmd_msg.velocity=20.0
                     print(self.ctrl_cmd_msg.steering)
                 else : 
@@ -85,6 +58,41 @@ class pure_pursuit :
         _,_,self.vehicle_yaw=euler_from_quaternion(odom_quaternion)
         self.current_postion.x=msg.pose.pose.position.x
         self.current_postion.y=msg.pose.pose.position.y
+
+    def calc_pure_pursuit(self,):                
+        vehicle_position=self.current_postion
+        self.is_look_forward_point= False
+
+        translation=[vehicle_position.x, vehicle_position.y]
+
+        t=np.array([
+                [cos(self.vehicle_yaw), -sin(self.vehicle_yaw),translation[0]],
+                [sin(self.vehicle_yaw),cos(self.vehicle_yaw),translation[1]],
+                [0                    ,0                    ,1            ]])
+
+        det_t=np.array([
+                [t[0][0],t[1][0],-(t[0][0]*translation[0]+t[1][0]*translation[1])],
+                [t[0][1],t[1][1],-(t[0][1]*translation[0]+t[1][1]*translation[1])],
+                [0      ,0      ,1                                               ]])
+
+        for num,i in enumerate(self.path.poses) :
+            path_point=i.pose.position
+
+            global_path_point=[path_point.x,path_point.y,1]
+            local_path_point=det_t.dot(global_path_point)           
+            if local_path_point[0]>0 :
+                dis=sqrt(pow(local_path_point[0],2)+pow(local_path_point[1],2))
+                if dis>= self.lfd :
+                    self.forward_point=path_point
+                    self.is_look_forward_point=True
+                    break
+        
+        theta=atan2(local_path_point[1],local_path_point[0])
+
+        steering = atan2((2*self.vehicle_length*sin(theta)),self.lfd)
+
+        return steering
+
 
 if __name__ == '__main__':
     try:

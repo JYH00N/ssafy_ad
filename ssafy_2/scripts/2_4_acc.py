@@ -56,45 +56,12 @@ class pure_pursuit :
 
                 global_obj,local_obj = self.calc_vaild_obj([self.status_msg.position.x,self.status_msg.position.y,(self.status_msg.heading)/180*pi])
                 
-                self.lfd = (self.status_msg.velocity.x)*0.78
-                if self.lfd < self.min_lfd : 
-                    self.lfd=self.min_lfd
-                elif self.lfd > self.max_lfd :
-                    self.lfd=self.max_lfd
-                
                 self.current_waypoint = self.get_current_waypoint(self.status_msg,self.global_path)
                 self.target_velocity = self.velocity_list[self.current_waypoint]*3.6
-                
-                vehicle_position=self.current_postion
-                self.is_look_forward_point= False
 
-                translation=[vehicle_position.x, vehicle_position.y]
-
-                t=np.array([
-                        [cos(self.vehicle_yaw), -sin(self.vehicle_yaw),translation[0]],
-                        [sin(self.vehicle_yaw),cos(self.vehicle_yaw),translation[1]],
-                        [0                    ,0                    ,1            ]])
-
-                det_t=np.array([
-                       [t[0][0],t[1][0],-(t[0][0]*translation[0]+t[1][0]*translation[1])],
-                       [t[0][1],t[1][1],-(t[0][1]*translation[0]+t[1][1]*translation[1])],
-                       [0      ,0      ,1                                               ]])
-
-                for num,i in enumerate(self.path.poses) :
-                    path_point=i.pose.position
-
-                    global_path_point=[path_point.x,path_point.y,1]
-                    local_path_point=det_t.dot(global_path_point)           
-                    if local_path_point[0]>0 :
-                        dis=sqrt(pow(local_path_point[0],2)+pow(local_path_point[1],2))
-                        if dis>= self.lfd :
-                            self.forward_point=path_point
-                            self.is_look_forward_point=True
-                            break
-                
-                theta=atan2(local_path_point[1],local_path_point[0])
+                steering = self.calc_pure_pursuit()
                 if self.is_look_forward_point :
-                    self.ctrl_cmd_msg.steering=atan2((2*self.vehicle_length*sin(theta)),self.lfd)
+                    self.ctrl_cmd_msg.steering = steering
                 else : 
                     rospy.loginfo("no found forward point")
                     self.ctrl_cmd_msg.steering=0.0
@@ -182,6 +149,47 @@ class pure_pursuit :
                 loal_object_info.append([self.object_info[0][num],local_result[0][0],local_result[1][0],self.object_info[3][num]])        
 
         return global_object_info,loal_object_info
+
+    def calc_pure_pursuit(self,):
+        self.lfd = (self.status_msg.velocity.x)*0.78
+        if self.lfd < self.min_lfd : 
+            self.lfd=self.min_lfd
+        elif self.lfd > self.max_lfd :
+            self.lfd=self.max_lfd
+        rospy.loginfo(self.lfd)
+        
+        vehicle_position=self.current_postion
+        self.is_look_forward_point= False
+
+        translation=[vehicle_position.x, vehicle_position.y]
+
+        t=np.array([
+                [cos(self.vehicle_yaw), -sin(self.vehicle_yaw),translation[0]],
+                [sin(self.vehicle_yaw),cos(self.vehicle_yaw),translation[1]],
+                [0                    ,0                    ,1            ]])
+
+        det_t=np.array([
+                [t[0][0],t[1][0],-(t[0][0]*translation[0]+t[1][0]*translation[1])],
+                [t[0][1],t[1][1],-(t[0][1]*translation[0]+t[1][1]*translation[1])],
+                [0      ,0      ,1                                               ]])
+
+        for num,i in enumerate(self.path.poses) :
+            path_point=i.pose.position
+
+            global_path_point=[path_point.x,path_point.y,1]
+            local_path_point=det_t.dot(global_path_point)           
+            if local_path_point[0]>0 :
+                dis=sqrt(pow(local_path_point[0],2)+pow(local_path_point[1],2))
+                if dis>= self.lfd :
+                    self.forward_point=path_point
+                    self.is_look_forward_point=True
+                    break
+        
+        theta=atan2(local_path_point[1],local_path_point[0])
+
+        steering = atan2((2*self.vehicle_length*sin(theta)),self.lfd)
+
+        return steering
 
 class pidControl:
     def __init__(self):
