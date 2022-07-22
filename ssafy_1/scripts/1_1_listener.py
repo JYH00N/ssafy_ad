@@ -4,7 +4,7 @@ import rospy
 from std_msgs.msg import String
 
 # listener 는 ROS 에서 가장 기본이 되는 Topic Subscriber(메세지 수신)의 기본 예제입니다.
-# String 타입의 /ssafy 라는 메세지를 Subscrib 합니다.
+# String 타입의 /ssafy 라는 메세지를 Subscribe 합니다.
 
 # 노드 실행 순서 
 # 1. ROS 노드 이름 선언

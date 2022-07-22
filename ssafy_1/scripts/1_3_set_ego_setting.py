@@ -3,10 +3,20 @@
 import rospy
 from morai_msgs.msg import MultiEgoSetting
 
+# Ego_setting_Command 는 Simulator 에서 Ego 차량의 위치를 제어하는 메세지 송신의 예제입니다.
+# /ego_setting 라는 메세지를 Publish 하여 Ego 차량을 제어 합니다.
+
+# 노드 실행 순서 
+# 1. publisher 생성
+# 2. 송신 될 메세지 변수 생성
+# 3. /ego_setting 메세지 Publish
+
 def talker():
+    #TODO: (1) publisher 생성
     publisher = rospy.Publisher('/ego_setting', MultiEgoSetting, queue_size=10)
     rospy.init_node('Ego_setting_Command', anonymous=True)
 
+    #TODO: (2) 송신 될 메세지 변수 생성
     ego_setting_msg = MultiEgoSetting()
     ego_setting_msg.number_of_ego_vehicle=1
     ego_setting_msg.camera_index = 0
@@ -24,7 +34,9 @@ def talker():
     rate = rospy.Rate(1) # 1 hz
     while not rospy.is_shutdown():
         rospy.loginfo(ego_setting_msg)
+        #TODO: (3) /ego_setting 메세지 Publish
         publisher.publish(ego_setting_msg)
+
         rate.sleep()
 
 if __name__ == '__main__':
