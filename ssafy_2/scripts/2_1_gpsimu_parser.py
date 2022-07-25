@@ -15,10 +15,10 @@ from math import pi
 # gpsimu_parser 는 GPS, IMU 센서 데이터를 받아 차량의 상대위치를 추정하는 예제입니다.
 
 # 노드 실행 순서 
-# 1. 변환 하고자 하는 좌표계를 선언 합니다.
-# 2. 
-# 3. 
-# 4. 
+# 1. 변환 하고자 하는 좌표계를 선언
+# 2. 송신 될 Odometry 메세지 변수 생성
+# 3. 위도 경도 데이터 UTM 죄표로 변환
+# 4. Odometry 메세지 변수에 차량의 위치 및 상태 데이터 담기
 
 class GPSIMUParser:
     def __init__(self):
@@ -63,7 +63,7 @@ class GPSIMUParser:
         os.system('clear')
         print(self.odom_msg)
 
-    #TODO: (3) 위도 경도 데이터와 변환한 UTM 좌표를 터미널 창에 출력 하여 확인
+    #TODO: (3) 위도 경도 데이터 UTM 죄표로 변환
     def convertLL2UTM(self):    
         xy_zone = self.proj_UTM(self.lon, self.lat)
 
