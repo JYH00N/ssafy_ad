@@ -21,7 +21,7 @@ from morai_msgs.msg import GPSMessage, EgoVehicleStatus
 class LL2UTMConverter:
     def __init__(self, zone=52) :
         self.gps_sub = rospy.Subscriber("/gps", GPSMessage, self.navsat_callback)
-
+        # 초기화
         self.x, self.y = None, None
 
         #TODO: (1) 변환 하고자 하는 좌표계를 선언
