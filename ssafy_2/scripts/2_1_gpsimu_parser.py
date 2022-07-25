@@ -53,15 +53,7 @@ class GPSIMUParser:
         self.e_o = gps_msg.eastOffset
         self.n_o = gps_msg.northOffset
 
-        #TODO: (3) 브로드캐스터 생성 및 Ego 상태 tf 브로드캐스팅
-        br = tf.TransformBroadcaster()
-        br.sendTransform((self.x, self.y, 0.),
-                        tf.transformations.quaternion_from_euler(0, 0, 0.),
-                        rospy.Time.now(),
-                        "base_link",
-                        "map")
-
-        #TODO: (5) Odometry 메세지 변수에 차량의 위치 및 상태 데이터 담기
+        #TODO: (4) Odometry 메세지 변수에 차량의 위치 및 상태 데이터 담기
         self.odom_msg.header.stamp = rospy.get_rostime()
         self.odom_msg.pose.pose.position.x = self.x
         self.odom_msg.pose.pose.position.y = self.y
@@ -71,7 +63,7 @@ class GPSIMUParser:
         os.system('clear')
         print(self.odom_msg)
 
-    #TODO: (4) 위도 경도 데이터와 변환한 UTM 좌표를 터미널 창에 출력 하여 확인
+    #TODO: (3) 위도 경도 데이터와 변환한 UTM 좌표를 터미널 창에 출력 하여 확인
     def convertLL2UTM(self):    
         xy_zone = self.proj_UTM(self.lon, self.lat)
 
@@ -81,7 +73,7 @@ class GPSIMUParser:
     def imu_callback(self, data):
         self.is_imu=True
 
-        #TODO: (5) Odometry 메세지 변수에 차량의 위치 및 상태 데이터 담기
+        #TODO: (4) Odometry 메세지 변수에 차량의 위치 및 상태 데이터 담기
         self.odom_msg.pose.pose.orientation.x = data.orientation.x
         self.odom_msg.pose.pose.orientation.y = data.orientation.y
         self.odom_msg.pose.pose.orientation.z = data.orientation.z

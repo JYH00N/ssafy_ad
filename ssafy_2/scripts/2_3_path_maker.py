@@ -4,8 +4,8 @@ from re import I
 import rospy
 import rospkg
 from math import sqrt
-from turtlesim.msg import Pose
-from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Point32,PoseStamped
+from nav_msgs.msg import Odometry,Path
 
 # path_maker 는 차량의 위치 데이터를 받아 txt 파일로 저장하는 예제입니다.
 # 저장한 txt 파일은 차량의 주행 경로가 되며 경로 계획에 이용 할 수 있습니다.
@@ -19,7 +19,13 @@ from nav_msgs.msg import Odometry
 class pathMaker :    
     def __init__(self, pkg_name = 'ssafy_2', path_name = 'make_path'):
         rospy.init_node('path_maker', anonymous=True)
+
         rospy.Subscriber("/odom", Odometry, self.odom_callback)
+
+        self.global_path_pub = rospy.Publisher('/global_path',Path, queue_size=1)
+        self.global_path_msg=Path()
+        self.global_path_msg.header.frame_id='/map'
+
         # 초기화
         self.prev_x = 0
         self.prev_y = 0
@@ -51,7 +57,15 @@ class pathMaker :
             self.prev_x=x
             self.prev_y=y
             self.prev_z=z
-            print("write : ", x,y,z)
+            
+            print(' write [ x : {} , y : {} ]'.format(x,y))
+
+            read_pose=PoseStamped()
+            read_pose.pose.position.x = x
+            read_pose.pose.position.y = y
+            read_pose.pose.orientation.w = 1
+            self.global_path_msg.poses.append(read_pose) 
+            self.global_path_pub.publish(self.global_path_msg)
 
     def odom_callback(self,msg):
         self.is_odom = True
