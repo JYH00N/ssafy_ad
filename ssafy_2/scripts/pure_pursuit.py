@@ -9,7 +9,6 @@ from nav_msgs.msg import Odometry,Path
 from morai_msgs.msg import CtrlCmd
 import numpy as np
 import tf
-from tf.transformations import euler_from_quaternion,quaternion_from_euler
 
 # pure_pursuit 은 차량의 차량의 횡 방향 제어 예제입니다.
 # 차량이 주행할 Local Path (지역경로) 와 차량의 상태 정보 Odometry 를 받아 차량을 제어 합니다.
@@ -72,7 +71,7 @@ class pure_pursuit :
     def odom_callback(self,msg):
         self.is_odom=True
         odom_quaternion=(msg.pose.pose.orientation.x,msg.pose.pose.orientation.y,msg.pose.pose.orientation.z,msg.pose.pose.orientation.w)
-        _,_,self.vehicle_yaw=euler_from_quaternion(odom_quaternion)
+        _,_,self.vehicle_yaw=tf.transformations.euler_from_quaternion(odom_quaternion)
         self.current_postion.x=msg.pose.pose.position.x
         self.current_postion.y=msg.pose.pose.position.y
 
