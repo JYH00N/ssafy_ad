@@ -10,18 +10,36 @@ from geometry_msgs.msg import Point32,PoseStamped
 from nav_msgs.msg import Odometry,Path
 from morai_msgs.msg import ObjectStatus, ObjectStatusList, EgoVehicleStatus
 
+# lane_change 는 차량의 차선변경 예제입니다.
+# 차량 경로상의 장애물을 탐색하여 경로 상에 장애물이 있다면 차선 변경으로 회피 기동을 합니다.
+# 차선 변경 시 단순히 목표 차선을 바꾸는 것이 아닌 3차 곡선을 그려 자연스러운 차선변경이 가능 하도록 경로를 만듭니다.
+
+# 노드 실행 순서 
+# 1. subscriber, publisher 선언
+# 2. 두개의 차선 경로 의 텍스트파일을 읽기 모드로 열기
+# 3. 읽어 온 경로 데이터를 Global Path 변수에 넣기
+# 4. 주행 경로상의 장애물 유무 확인
+# 5. 장애물이 있다면 주행 경로를 변경 하도록 로직 작성.
+# 6. 좌표 변환 행렬 생성
+# 7. 3차 곡선을 이용한 주행 경로 생성
+# 8. 경로 데이터 Publish
+
 class lc_path_pub :
     def __init__(self):
         rospy.init_node('lc_path_pub', anonymous=True)
+
+        #TODO: (1) subscriber, publisher 선언
         rospy.Subscriber("/Ego_topic", EgoVehicleStatus, self.statusCB)
         rospy.Subscriber("/Object_topic", ObjectStatusList, self.object_info_callback)
         self.global_path_pub = rospy.Publisher('/global_path',Path, queue_size=1)
         self.local_path_pub = rospy.Publisher('/local_path',Path, queue_size=1)
+
         self.lc_1=Path()
         self.lc_1.header.frame_id='/map'
         self.lc_2=Path()
         self.lc_2.header.frame_id='/map'
 
+        #TODO: (2) 두개의 차선 경로 의 텍스트파일을 읽기 모드로 열기
         rospack=rospkg.RosPack()
         pkg_path=rospack.get_path('ssafy_2')
         lc_1 = pkg_path+'/path'+'/lc_1.txt'
@@ -52,11 +70,12 @@ class lc_path_pub :
         self.is_status = False
 
         self.local_path_size = 25
-
-        global_path = self.lc_1
-        current_lane = 1
         
-        self.lane_change = False
+        self.lane_change = False        
+        current_lane = 1
+
+        #TODO: (3) 읽어 온 경로 데이터를 Global Path 로 지정
+        global_path = self.lc_1
 
         rate = rospy.Rate(10) # 10hz
         while not rospy.is_shutdown():
@@ -67,6 +86,7 @@ class lc_path_pub :
 
                 currnet_waypoint = self.get_current_waypoint(self.x,self.y,global_path)
 
+                #TODO: (5) 장애물이 있다면 주행 경로를 변경 하도록 로직 작성
                 if self.lane_change == True:
                     if currnet_waypoint + self.local_path_size > len(global_path.poses):
                         self.lane_change = False
@@ -97,6 +117,7 @@ class lc_path_pub :
                         self.lane_change = True
                         self.object=[False,0]
 
+                #TODO: (8) 경로 데이터 Publish
                 self.local_path_pub.publish(self.local_path_msg)
                 self.global_path_pub.publish(global_path)
 
@@ -198,7 +219,8 @@ class lc_path_pub :
 
         return global_object_info,loal_object_info
 
-    def check_object(self,ref_path,global_vaild_object,local_vaild_object): ## 경로상의 장애물 유무 확인 (차량, 사람, 정지선 신호) ##
+    def check_object(self,ref_path,global_vaild_object,local_vaild_object):
+        #TODO: (4) 주행 경로상의 장애물 유무 확인
         self.object=[False,0]
         if len(global_vaild_object) >0  :
             min_rel_distance=float('inf')
@@ -217,14 +239,19 @@ class lc_path_pub :
         out_path.header.frame_id='/map'
 
         # 지역 좌표계로 변환
+        #TODO: (6) 좌표 변환 행렬 생성
         translation=[start_point.pose.position.x, start_point.pose.position.y]
         theta=atan2(start_next_point.pose.position.y-start_point.pose.position.y,start_next_point.pose.position.x-start_point.pose.position.x)
 
-        t=np.array([[cos(theta), -sin(theta),translation[0]],[sin(theta),cos(theta),translation[1]],[0,0,1]])
-        det_t=np.array([[t[0][0],t[1][0],-(t[0][0]*translation[0]+t[1][0]*translation[1])   ],[t[0][1],t[1][1],-(t[0][1]*translation[0]+t[1][1]*translation[1])   ],[0,0,1]])
+        trans_matrix = np.array([
+                                [cos(theta), -sin(theta),translation[0]],
+                                [sin(theta),cos(theta),translation[1]],
+                                [0,0,1]])
+
+        det_trans_matrix = np.linalg.inv(trans_matrix)
 
         world_end_point=np.array([[end_point.pose.position.x],[end_point.pose.position.y],[1]])
-        local_end_point=det_t.dot(world_end_point)
+        local_end_point=det_trans_matrix.dot(world_end_point)
 
         waypoints_x=[]
         waypoints_y=[]
@@ -241,6 +268,7 @@ class lc_path_pub :
         
         a=[0.0,0.0,0.0,0.0]
 
+        #TODO: (7) 3차 곡선을 이용한 주행 경로 생성
         a[0]=y_start
         a[1]=0
         a[2]=3.0*(y_end-y_start)/(x_end*x_end)

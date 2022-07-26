@@ -11,31 +11,52 @@ import numpy as np
 import tf
 from tf.transformations import euler_from_quaternion,quaternion_from_euler
 
+# acc 는 차량의 Adaptive Cruise Control 예제입니다.
+# 차량 경로상의 장애물을 탐색하여 탐색된 차량과의 속도 차이를 계산하여 Cruise Control 을 진행합니다.
+
+# 노드 실행 순서 
+# 1. subscriber, publisher 선언
+# 2. 속도 비례 Look Ahead Distance 값 설정
+# 3. 좌표 변환 행렬 생성
+# 4. Steering 각도 계산
+# 5. PID 제어 생성
+# 6. 도로의 곡률 계산
+# 7. 곡률 기반 속도 계획
+# 8. 경로상의 장애물 유무 확인 (차량, 사람, 정지선 신호)
+# 9. 장애물과의 속도와 거리 차이를 이용하여 ACC 를 진행 목표 속도를 설정
+# 10. 제어입력 메세지 Publish
+
 
 class pure_pursuit :
     def __init__(self):
         rospy.init_node('pure_pursuit', anonymous=True)
+
+        #TODO: (1) Global/Local Path Odometry Object/Ego Status CtrlCmd subscriber, publisher 선언
         rospy.Subscriber("/global_path", Path, self.global_path_callback) 
         rospy.Subscriber("local_path", Path, self.path_callback)
         rospy.Subscriber("odom", Odometry, self.odom_callback)
-        rospy.Subscriber("/Ego_topic",EgoVehicleStatus, self.status_callback)                       # Ego 차량 Status Subscribe
+        rospy.Subscriber("/Ego_topic",EgoVehicleStatus, self.status_callback)
         rospy.Subscriber("/Object_topic", ObjectStatusList, self.object_info_callback)
         self.ctrl_cmd_pub = rospy.Publisher('ctrl_cmd',CtrlCmd, queue_size=1)
+
         self.ctrl_cmd_msg = CtrlCmd()
         self.ctrl_cmd_msg.longlCmdType = 1
 
         self.is_path = False
-        self.is_odom = False                                                                        # Path data 확인
+        self.is_odom = False
         self.is_status = False
         self.is_global_path = False
 
+        self.is_look_forward_point = False
+
         self.forward_point = Point()
         self.current_postion = Point()
-        self.is_look_forward_point = False
+
         self.vehicle_length = 2.6
         self.lfd = 8
         self.min_lfd=5
         self.max_lfd=30
+        self.lfd_gain = 0.78
         self.target_velocity = 60
 
         self.pid = pidControl()
@@ -78,7 +99,9 @@ class pure_pursuit :
                     self.ctrl_cmd_msg.accel = 0.0
                     self.ctrl_cmd_msg.brake = -output
 
+                #TODO: (10) 제어입력 메세지 Publish
                 self.ctrl_cmd_pub.publish(self.ctrl_cmd_msg)
+
             rate.sleep()
 
     def path_callback(self,msg):
@@ -151,7 +174,10 @@ class pure_pursuit :
         return global_object_info,loal_object_info
 
     def calc_pure_pursuit(self,):
-        self.lfd = (self.status_msg.velocity.x)*0.78
+
+        #TODO: (2) 속도 비례 Look Ahead Distance 값 설정
+        self.lfd = (self.status_msg.velocity.x)*self.lfd_gain
+        
         if self.lfd < self.min_lfd : 
             self.lfd=self.min_lfd
         elif self.lfd > self.max_lfd :
@@ -161,32 +187,31 @@ class pure_pursuit :
         vehicle_position=self.current_postion
         self.is_look_forward_point= False
 
-        translation=[vehicle_position.x, vehicle_position.y]
+        translation = [vehicle_position.x, vehicle_position.y]
 
-        t=np.array([
+        #TODO: (3) 좌표 변환 행렬 생성
+        trans_matrix = np.array([
                 [cos(self.vehicle_yaw), -sin(self.vehicle_yaw),translation[0]],
                 [sin(self.vehicle_yaw),cos(self.vehicle_yaw),translation[1]],
                 [0                    ,0                    ,1            ]])
 
-        det_t=np.array([
-                [t[0][0],t[1][0],-(t[0][0]*translation[0]+t[1][0]*translation[1])],
-                [t[0][1],t[1][1],-(t[0][1]*translation[0]+t[1][1]*translation[1])],
-                [0      ,0      ,1                                               ]])
+        det_trans_matrix = np.linalg.inv(trans_matrix)
 
         for num,i in enumerate(self.path.poses) :
             path_point=i.pose.position
 
-            global_path_point=[path_point.x,path_point.y,1]
-            local_path_point=det_t.dot(global_path_point)           
+            global_path_point = [path_point.x,path_point.y,1]
+            local_path_point = det_trans_matrix.dot(global_path_point)    
+
             if local_path_point[0]>0 :
-                dis=sqrt(pow(local_path_point[0],2)+pow(local_path_point[1],2))
-                if dis>= self.lfd :
-                    self.forward_point=path_point
-                    self.is_look_forward_point=True
+                dis = sqrt(pow(local_path_point[0],2)+pow(local_path_point[1],2))
+                if dis >= self.lfd :
+                    self.forward_point = path_point
+                    self.is_look_forward_point = True
                     break
         
-        theta=atan2(local_path_point[1],local_path_point[0])
-
+        theta = atan2(local_path_point[1],local_path_point[0])
+        #TODO: (4) Steering 각도 계산
         steering = atan2((2*self.vehicle_length*sin(theta)),self.lfd)
 
         return steering
@@ -202,11 +227,15 @@ class pidControl:
 
     def pid(self,target_vel, current_vel):
         error = target_vel - current_vel
+
+        #TODO: (5) PID 제어 생성
         p_control = self.p_gain * error
         self.i_control += self.i_gain * error * self.controlTime
         d_control = self.d_gain * (error-self.prev_error) / self.controlTime
+
         output = p_control + self.i_control + d_control
         self.prev_error = error
+
         return output
 
 class velocityPlanning:
@@ -229,16 +258,18 @@ class velocityPlanning:
                 x_list.append([-2*x, -2*y ,1])
                 y_list.append((-x*x) - (y*y))
 
+            #TODO: (6) 도로의 곡률 계산
             x_matrix = np.array(x_list)
             y_matrix = np.array(y_list)
             x_trans = x_matrix.T
-
 
             a_matrix = np.linalg.inv(x_trans.dot(x_matrix)).dot(x_trans).dot(y_matrix)
             a = a_matrix[0]
             b = a_matrix[1]
             c = a_matrix[2]
             r = sqrt(a*a+b*b-c)
+
+            #TODO: (7) 곡률 기반 속도 계획
             v_max = sqrt(r*9.8*self.road_friction)
             if v_max > self.car_max_speed:
                 v_max = self.car_max_speed
@@ -264,7 +295,7 @@ class AdaptiveCruiseControl:
         self.object_velocity = 0
 
     def check_object(self, local_path, loal_object_info, global_obj_info,current_traffic_light):
-        """경로상의 장애물 유무 확인 (차량, 사람, 정지선 신호)"""
+        #TODO: (8) 경로상의 장애물 유무 확인 (차량, 사람, 정지선 신호)
         self.object_type = None
         min_relative_distance = float('inf')
         for i, object_info in enumerate(loal_object_info):
@@ -298,6 +329,7 @@ class AdaptiveCruiseControl:
                         self.object_velocity = object_velocity
 
     def get_target_velocity(self, ego_vel, target_vel):
+        #TODO: (9) 장애물과의 속도와 거리 차이를 이용하여 ACC 를 진행 목표 속도를 설정
         out_vel = target_vel
 
         if self.object_type == 0:

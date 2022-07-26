@@ -19,6 +19,7 @@ from math import pi
 # 2. 송신 될 Odometry 메세지 변수 생성
 # 3. 위도 경도 데이터 UTM 죄표로 변환
 # 4. Odometry 메세지 변수에 차량의 위치 및 상태 데이터 담기
+# 5. Odometry 메세지 Publish
 
 class GPSIMUParser:
     def __init__(self):
@@ -57,7 +58,9 @@ class GPSIMUParser:
         self.odom_msg.header.stamp = rospy.get_rostime()
         self.odom_msg.pose.pose.position.x = self.x
         self.odom_msg.pose.pose.position.y = self.y
-        self.odom_msg.pose.pose.position.z = 0
+        self.odom_msg.pose.pose.position.z = 0.
+
+        #TODO: (5) Odometry 메세지 Publish
         self.odom_pub.publish(self.odom_msg)
 
         os.system('clear')

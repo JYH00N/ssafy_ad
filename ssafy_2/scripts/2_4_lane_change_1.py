@@ -10,18 +10,33 @@ from geometry_msgs.msg import Point32,PoseStamped
 from nav_msgs.msg import Odometry,Path
 from morai_msgs.msg import ObjectStatus, ObjectStatusList, EgoVehicleStatus
 
+# lane_change 는 차량의 차선변경 예제입니다.
+# 차량 경로상의 장애물을 탐색하여 경로 상에 장애물이 있다면 차선 변경으로 회피 기동을 합니다.
+
+# 노드 실행 순서 
+# 1. subscriber, publisher 선언
+# 2. 두개의 차선 경로 의 텍스트파일을 읽기 모드로 열기
+# 3. 읽어 온 경로 데이터를 Global Path 로 지정
+# 4. 주행 경로상의 장애물 유무 확인
+# 5. 장애물이 있다면 주행 경로를 변경 하도록 로직 작성
+# 6. 경로 데이터 Publish
+
 class lc_path_pub :
     def __init__(self):
         rospy.init_node('lc_path_pub', anonymous=True)
+
+        #TODO: (1) subscriber, publisher 선언
         rospy.Subscriber("/Ego_topic", EgoVehicleStatus, self.statusCB)
         rospy.Subscriber("/Object_topic", ObjectStatusList, self.object_info_callback)
         self.global_path_pub = rospy.Publisher('/global_path',Path, queue_size=1)
         self.local_path_pub = rospy.Publisher('/local_path',Path, queue_size=1)
+
         self.lc_1=Path()
         self.lc_1.header.frame_id='/map'
         self.lc_2=Path()
         self.lc_2.header.frame_id='/map'
 
+        #TODO: (2) 두개의 차선 경로 의 텍스트파일을 읽기 모드로 열기
         rospack=rospkg.RosPack()
         pkg_path=rospack.get_path('ssafy_2')
         lc_1 = pkg_path+'/path'+'/lc_1.txt'
@@ -53,6 +68,7 @@ class lc_path_pub :
 
         self.local_path_size = 25
 
+        #TODO: (3) 읽어 온 경로 데이터를 Global Path 로 지정
         global_path = self.lc_1
 
         rate = rospy.Rate(10) # 10hz
@@ -64,12 +80,14 @@ class lc_path_pub :
 
                 self.check_object(self.local_path_msg,global_obj,local_obj)
                 
+                #TODO: (5) 장애물이 있다면 주행 경로를 변경 하도록 로직 작성
                 if self.object[0] == True:
                     if global_path != self.lc_1:
                         global_path = self.lc_1
                     else:
                         global_path = self.lc_2
 
+                #TODO: (6) 경로 데이터 Publish
                 self.local_path_pub.publish(self.local_path_msg)
                 self.global_path_pub.publish(global_path)
 
@@ -158,7 +176,8 @@ class lc_path_pub :
 
         return global_object_info,loal_object_info
 
-    def check_object(self,ref_path,global_vaild_object,local_vaild_object): ## 경로상의 장애물 유무 확인 (차량, 사람, 정지선 신호) ##
+    def check_object(self,ref_path,global_vaild_object,local_vaild_object): 
+        #TODO: (4) 주행 경로상의 장애물 유무 확인
         self.object=[False,0]
         if len(global_vaild_object) >0  :
             min_rel_distance=float('inf')

@@ -17,6 +17,7 @@ from nav_msgs.msg import Odometry,Path
 # 4. 콜백함수에서 처음 메시지가 들어오면 초기 위치를 저장
 # 5. Global Path 에서 차량 위치와 가장 가까운 포인트(Currenty Waypoint) 탐색
 # 6. 가장 가까운 포인트(Currenty Waypoint) 위치부터 Local Path 생성 및 예외 처리 
+# 7. Local Path 메세지 Publish
 
 
 class local_path_pub :
@@ -75,6 +76,7 @@ class local_path_pub :
                             local_path_msg.poses.append(tmp_pose)
 
                 print(x,y)
+                #TODO: (7) Local Path 메세지 Publish
                 self.local_path_pub.publish(local_path_msg)
 
             rate.sleep()

@@ -11,32 +11,54 @@ import numpy as np
 import tf
 from tf.transformations import euler_from_quaternion,quaternion_from_euler
 
+# velocity_planning 은 차량의 차량의 종 횡 방향 제어 예제입니다.
+# 차량의 곡률 기반 속도 계획을 세워 주행 경로에 맞는 속도 계획을 할 수 있는 예제 입니다.
+# 횡방향 제어 입력은 주행할 Local Path (지역경로) 와 차량의 상태 정보 Odometry 를 받아 차량을 제어 합니다.
+# 종방향 제어 입력은 목표 속도를 지정 한뒤 목표 속도에 도달하기 위한 Throttle control 을 합니다.
+# 종방향 제어 입력은 longlCmdType 1(Throttle control) 이용합니다.
+
+# 노드 실행 순서 
+# 1. subscriber, publisher 선언
+# 2. 좌표 변환 행렬 생성
+# 3. Steering 각도 계산
+# 4. PID 제어 생성
+# 5. 도로의 곡률 계산
+# 6. 곡률 기반 속도 계획
+# 7. 제어입력 메세지 Publish
+
 
 class pure_pursuit :
     def __init__(self):
         rospy.init_node('pure_pursuit', anonymous=True)
+
+        #TODO: (1) subscriber, publisher 선언
         rospy.Subscriber("/global_path", Path, self.global_path_callback) 
         rospy.Subscriber("local_path", Path, self.path_callback)
         rospy.Subscriber("odom", Odometry, self.odom_callback)
-        rospy.Subscriber("/Ego_topic",EgoVehicleStatus, self.status_callback)                       # Ego 차량 Status Subscribe
+        rospy.Subscriber("/Ego_topic",EgoVehicleStatus, self.status_callback)
         self.ctrl_cmd_pub = rospy.Publisher('ctrl_cmd',CtrlCmd, queue_size=1)
+
         self.ctrl_cmd_msg=CtrlCmd()
         self.ctrl_cmd_msg.longlCmdType=1
 
         self.is_path = False
-        self.is_odom = False                                                                        # Path data 확인
+        self.is_odom = False
         self.is_status = False
         self.is_global_path = False
 
+        self.is_look_forward_point = False
+
         self.forward_point = Point()
         self.current_postion = Point()
-        self.is_look_forward_point = False
+
         self.vehicle_length = 1
         self.lfd = 5
         self.target_velocity = 60
 
         self.pid = pidControl()
+
         self.vel_planning = velocityPlanning(self.target_velocity/3.6, 0.15)
+
         while True:
             if self.is_global_path == True:
                 self.velocity_list = self.vel_planning.curvedBaseVelocity(self.global_path, 50)
@@ -57,7 +79,7 @@ class pure_pursuit :
                     self.ctrl_cmd_msg.steering = steering
                 else : 
                     print("no found forward point")
-                    self.ctrl_cmd_msg.steering=0.0
+                    self.ctrl_cmd_msg.steering = 0.0
 
                 output = self.pid.pid(self.target_velocity,self.status_msg.velocity.x*3.6)
 
@@ -68,7 +90,9 @@ class pure_pursuit :
                     self.ctrl_cmd_msg.accel = 0.0
                     self.ctrl_cmd_msg.brake = -output
 
+                #TODO: (7) 제어입력 메세지 Publish
                 self.ctrl_cmd_pub.publish(self.ctrl_cmd_msg)
+                
             rate.sleep()
 
     def path_callback(self,msg):
@@ -103,36 +127,35 @@ class pure_pursuit :
                 currnet_waypoint = i
         return currnet_waypoint
 
-    def calc_pure_pursuit(self,):                
+    def calc_pure_pursuit(self,):
         vehicle_position=self.current_postion
         self.is_look_forward_point= False
 
-        translation=[vehicle_position.x, vehicle_position.y]
+        translation = [vehicle_position.x, vehicle_position.y]
 
-        t=np.array([
+        #TODO: (2) 좌표 변환 행렬 생성
+        trans_matrix = np.array([
                 [cos(self.vehicle_yaw), -sin(self.vehicle_yaw),translation[0]],
                 [sin(self.vehicle_yaw),cos(self.vehicle_yaw),translation[1]],
                 [0                    ,0                    ,1            ]])
 
-        det_t=np.array([
-                [t[0][0],t[1][0],-(t[0][0]*translation[0]+t[1][0]*translation[1])],
-                [t[0][1],t[1][1],-(t[0][1]*translation[0]+t[1][1]*translation[1])],
-                [0      ,0      ,1                                               ]])
+        det_trans_matrix = np.linalg.inv(trans_matrix)
 
         for num,i in enumerate(self.path.poses) :
             path_point=i.pose.position
 
-            global_path_point=[path_point.x,path_point.y,1]
-            local_path_point=det_t.dot(global_path_point)           
+            global_path_point = [path_point.x,path_point.y,1]
+            local_path_point = det_trans_matrix.dot(global_path_point)    
+
             if local_path_point[0]>0 :
-                dis=sqrt(pow(local_path_point[0],2)+pow(local_path_point[1],2))
-                if dis>= self.lfd :
-                    self.forward_point=path_point
-                    self.is_look_forward_point=True
+                dis = sqrt(pow(local_path_point[0],2)+pow(local_path_point[1],2))
+                if dis >= self.lfd :
+                    self.forward_point = path_point
+                    self.is_look_forward_point = True
                     break
         
-        theta=atan2(local_path_point[1],local_path_point[0])
-
+        theta = atan2(local_path_point[1],local_path_point[0])
+        #TODO: (3) Steering 각도 계산
         steering = atan2((2*self.vehicle_length*sin(theta)),self.lfd)
 
         return steering
@@ -148,11 +171,15 @@ class pidControl:
 
     def pid(self,target_vel, current_vel):
         error = target_vel - current_vel
+
+        #TODO: (4) PID 제어 생성
         p_control = self.p_gain * error
         self.i_control += self.i_gain * error * self.controlTime
         d_control = self.d_gain * (error-self.prev_error) / self.controlTime
+
         output = p_control + self.i_control + d_control
         self.prev_error = error
+
         return output
 
 class velocityPlanning:
@@ -175,17 +202,20 @@ class velocityPlanning:
                 x_list.append([-2*x, -2*y ,1])
                 y_list.append((-x*x) - (y*y))
 
+            #TODO: (5) 도로의 곡률 계산
             x_matrix = np.array(x_list)
             y_matrix = np.array(y_list)
             x_trans = x_matrix.T
-
 
             a_matrix = np.linalg.inv(x_trans.dot(x_matrix)).dot(x_trans).dot(y_matrix)
             a = a_matrix[0]
             b = a_matrix[1]
             c = a_matrix[2]
             r = sqrt(a*a+b*b-c)
+
+            #TODO: (6) 곡률 기반 속도 계획
             v_max = sqrt(r*9.8*self.road_friction)
+
             if v_max > self.car_max_speed:
                 v_max = self.car_max_speed
             out_vel_plan.append(v_max)
