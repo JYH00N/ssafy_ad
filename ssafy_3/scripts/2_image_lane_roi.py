@@ -9,9 +9,7 @@ from sensor_msgs.msg import CompressedImage
 from cv_bridge import CvBridgeError
 
 class IMGParser:
-
     def __init__(self):
-
         self.image_sub = rospy.Subscriber("/image_jpeg/compressed", CompressedImage, self.callback)
         
         # image_size
