@@ -26,7 +26,7 @@ class lc_path_pub :
         rospy.init_node('lc_path_pub', anonymous=True)
 
         #TODO: (1) subscriber, publisher 선언
-        rospy.Subscriber("/Ego_topic", EgoVehicleStatus, self.statusCB)
+        rospy.Subscriber("odom", Odometry, self.odom_callback)
         rospy.Subscriber("/Object_topic", ObjectStatusList, self.object_info_callback)
         self.global_path_pub = rospy.Publisher('/global_path',Path, queue_size=1)
         self.local_path_pub = rospy.Publisher('/local_path',Path, queue_size=1)
@@ -64,7 +64,7 @@ class lc_path_pub :
         self.f.close()
 
         self.is_object_info = False
-        self.is_status = False
+        self.is_odom = False
 
         self.local_path_size = 25
 
@@ -73,19 +73,14 @@ class lc_path_pub :
 
         rate = rospy.Rate(10) # 10hz
         while not rospy.is_shutdown():
-            if self.is_object_info == True and self.is_status == True:
+            if self.is_object_info == True and self.is_odom == True:
 
-                global_obj,local_obj = self.calc_vaild_obj([self.status_msg.position.x,self.status_msg.position.y,(self.status_msg.heading)/180*pi])
+                global_obj,local_obj = self.calc_vaild_obj([self.x,self.y,(self.vehicle_yaw)])
                 self.local_path_make(global_path)
 
-                self.check_object(self.local_path_msg,global_obj,local_obj)
-                
-                #TODO: (5) 장애물이 있다면 주행 경로를 변경 하도록 로직 작성
-                if self.object[0] == True:
-                    if global_path != self.lc_1:
-                        global_path = self.lc_1
-                    else:
-                        global_path = self.lc_2
+                currnet_waypoint = self.get_current_waypoint(self.x,self.y,global_path)
+
+                global_path = self.lc_planning(global_obj,local_obj,currnet_waypoint,global_path)
 
                 #TODO: (6) 경로 데이터 Publish
                 self.local_path_pub.publish(self.local_path_msg)
@@ -93,19 +88,16 @@ class lc_path_pub :
 
             rate.sleep()
 
-    def statusCB(self,data): ## Vehicle Status Subscriber 
-        self.status_msg = data
-        self.x = self.status_msg.position.x
-        self.y = self.status_msg.position.y
-        self.is_status = True
-        # 브로드캐스터 생성
-        br = tf.TransformBroadcaster()
-        # Ego 상태 tf 브로드캐스팅
-        br.sendTransform((self.status_msg.position.x, self.status_msg.position.y, 2),
-                        tf.transformations.quaternion_from_euler(0,0, self.status_msg.heading/180*pi),
-                        rospy.Time.now(),
-                        "Ego",
-                        "map")
+    def odom_callback(self,msg):
+
+        self.x = msg.pose.pose.position.x
+        self.y = msg.pose.pose.position.y
+
+        odom_quaternion=(msg.pose.pose.orientation.x,msg.pose.pose.orientation.y,msg.pose.pose.orientation.z,msg.pose.pose.orientation.w)
+
+        _,_,self.vehicle_yaw=tf.transformations.euler_from_quaternion(odom_quaternion)
+
+        self.is_odom = True
 
     def object_info_callback(self,data): ## Object information Subscriber
         self.is_object_info = True
@@ -120,7 +112,20 @@ class lc_path_pub :
             object_pose_y.append(data.npc_list[num].position.y)
             object_velocity.append(data.npc_list[num].velocity.x)
 
-        self.object_info=[object_type,object_pose_x,object_pose_y,object_velocity]   
+        self.object_info=[object_type,object_pose_x,object_pose_y,object_velocity]
+    
+    def get_current_waypoint(self,x,y,global_path):
+        min_dist = float('inf')        
+        currnet_waypoint = -1
+        for i,pose in enumerate(global_path.poses):
+            dx = x - pose.pose.position.x
+            dy = y - pose.pose.position.y
+
+            dist = sqrt(pow(dx,2)+pow(dy,2))
+            if min_dist > dist :
+                min_dist = dist
+                currnet_waypoint = i
+        return currnet_waypoint
     
     def local_path_make(self,global_path):
                 
@@ -175,6 +180,19 @@ class lc_path_pub :
                 loal_object_info.append([self.object_info[0][num],local_result[0][0],local_result[1][0],self.object_info[3][num]])        
 
         return global_object_info,loal_object_info
+
+    def lc_planning(self,global_obj,local_obj,currnet_waypoint,global_path):
+        #TODO: (5) 장애물이 있다면 주행 경로를 변경 하도록 로직 작성
+        self.check_object(self.local_path_msg,global_obj,local_obj)
+        
+        if self.object[0] == True:
+            if global_path != self.lc_1:
+                global_path = self.lc_1
+            else:
+                global_path = self.lc_2
+
+        return global_path
+
 
     def check_object(self,ref_path,global_vaild_object,local_vaild_object): 
         #TODO: (4) 주행 경로상의 장애물 유무 확인

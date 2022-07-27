@@ -37,33 +37,29 @@ class GPSIMUParser:
         #TODO: (2) 송신 될 Odometry 메세지 변수 생성
         self.odom_msg=Odometry()
         self.odom_msg.header.frame_id='/odom'
-        self.odom_msg.child_frame_id='/base_link1'
+        self.odom_msg.child_frame_id='/base_link'
 
         rate = rospy.Rate(30) # 30hz
         while not rospy.is_shutdown():
             if self.is_imu==True and self.is_gps == True:
                 self.convertLL2UTM()
+
+                #TODO: (5) Odometry 메세지 Publish
+                self.odom_pub.publish(self.odom_msg)
+
+                os.system('clear')
+                print(self.odom_msg)
+
                 rate.sleep()
 
     def navsat_callback(self, gps_msg):
-        self.is_gps=True
 
         self.lat = gps_msg.latitude
         self.lon = gps_msg.longitude
         self.e_o = gps_msg.eastOffset
         self.n_o = gps_msg.northOffset
 
-        #TODO: (4) Odometry 메세지 변수에 차량의 위치 및 상태 데이터 담기
-        self.odom_msg.header.stamp = rospy.get_rostime()
-        self.odom_msg.pose.pose.position.x = self.x
-        self.odom_msg.pose.pose.position.y = self.y
-        self.odom_msg.pose.pose.position.z = 0.
-
-        #TODO: (5) Odometry 메세지 Publish
-        self.odom_pub.publish(self.odom_msg)
-
-        os.system('clear')
-        print(self.odom_msg)
+        self.is_gps=True
 
     #TODO: (3) 위도 경도 데이터 UTM 죄표로 변환
     def convertLL2UTM(self):    
@@ -72,14 +68,21 @@ class GPSIMUParser:
         self.x = xy_zone[0] - self.e_o
         self.y = xy_zone[1] - self.n_o
 
+        #TODO: (4) Odometry 메세지 변수에 차량의 위치 및 상태 데이터 담기
+        self.odom_msg.header.stamp = rospy.get_rostime()
+        self.odom_msg.pose.pose.position.x = self.x
+        self.odom_msg.pose.pose.position.y = self.y
+        self.odom_msg.pose.pose.position.z = 0.
+
     def imu_callback(self, data):
-        self.is_imu=True
 
         #TODO: (4) Odometry 메세지 변수에 차량의 위치 및 상태 데이터 담기
         self.odom_msg.pose.pose.orientation.x = data.orientation.x
         self.odom_msg.pose.pose.orientation.y = data.orientation.y
         self.odom_msg.pose.pose.orientation.z = data.orientation.z
         self.odom_msg.pose.pose.orientation.w = data.orientation.w
+
+        self.is_imu=True
 
 if __name__ == '__main__':
     try:

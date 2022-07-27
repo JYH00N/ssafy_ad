@@ -21,7 +21,7 @@ from morai_msgs.msg import ObjectStatus, ObjectStatusList, EgoVehicleStatus
 # 4. 주행 경로상의 장애물 유무 확인
 # 5. 장애물이 있다면 주행 경로를 변경 하도록 로직 작성.
 # 6. 좌표 변환 행렬 생성
-# 7. 차선변경 시작점과 끝점을 이어주는 주행 경로 생성
+# 7. 3차 곡선을 이용한 주행 경로 생성
 # 8. 경로 데이터 Publish
 
 class lc_path_pub :
@@ -95,7 +95,6 @@ class lc_path_pub :
             rate.sleep()
 
     def odom_callback(self,msg):
-
         self.x = msg.pose.pose.position.x
         self.y = msg.pose.pose.position.y
 
@@ -133,8 +132,7 @@ class lc_path_pub :
                 currnet_waypoint = i
         return currnet_waypoint
     
-    def local_path_make(self,global_path):
-                
+    def local_path_make(self,global_path):                
         self.local_path_msg=Path()
         self.local_path_msg.header.frame_id='/map'
         
@@ -240,29 +238,58 @@ class lc_path_pub :
         out_path=Path()  
         out_path.header.frame_id='/map'
 
-        #TODO: (5) 차선변경 시작점과 끝점을 이어주는 주행 경로 생성
+        # 지역 좌표계로 변환
+        #TODO: (6) 좌표 변환 행렬 생성
+        translation=[start_point.pose.position.x, start_point.pose.position.y]
+        theta=atan2(start_next_point.pose.position.y-start_point.pose.position.y,start_next_point.pose.position.x-start_point.pose.position.x)
 
-        point_to_point_distance = 0.5
-        start_path_distance = sqrt(pow(end_point.pose.position.x-start_point.pose.position.x,2)+pow(end_point.pose.position.y-start_point.pose.position.y,2))
-        start_path_repeat = int(start_path_distance/point_to_point_distance)
+        trans_matrix = np.array([
+                                [cos(theta), -sin(theta),translation[0]],
+                                [sin(theta),cos(theta),translation[1]],
+                                [0,0,1]])
 
-        theta=atan2(end_point.pose.position.y-start_point.pose.position.y,end_point.pose.position.x-start_point.pose.position.x)
+        det_trans_matrix = np.linalg.inv(trans_matrix)
 
-        ratation_matric_1 = np.array([  [   cos(theta), -sin(theta)  ],
-                                        [   sin(theta),  cos(theta)  ]    ])
+        world_end_point=np.array([[end_point.pose.position.x],[end_point.pose.position.y],[1]])
+        local_end_point=det_trans_matrix.dot(world_end_point)
 
-        for k in range(0,start_path_repeat+1):
-            ratation_matric_2 = np.array([  [ k*point_to_point_distance ],  
-                                            [ 0                         ]   ])
-            roation_matric_calc = np.matmul(ratation_matric_1,ratation_matric_2)
+        waypoints_x=[]
+        waypoints_y=[]
+        x_interval=0.5
+        x_start=0
+        x_end=local_end_point[0][0]
+
+        y_start=0.0
+        y_end=local_end_point[1][0]
+
+        x_num=x_end/x_interval
+        for i in range(x_start,int(x_num)) : 
+            waypoints_x.append(i*x_interval)
+        
+        a=[0.0,0.0,0.0,0.0]
+
+        #TODO: (7) 3차 곡선을 이용한 주행 경로 생성
+        a[0]=y_start
+        a[1]=0
+        a[2]=3.0*(y_end-y_start)/(x_end*x_end)
+        a[3]=-2.0*(y_end-y_start)/(x_end*x_end*x_end)
+
+        for i in waypoints_x:
+            result=a[3]*i*i*i+a[2]*i*i+a[1]*i+a[0]
+            waypoints_y.append(result)
+
+        for i in range(0,len(waypoints_y)) :
+            local_result=np.array([[waypoints_x[i]],[waypoints_y[i]],[1]])
+            global_result=trans_matrix.dot(local_result)
+
             read_pose=PoseStamped()
-            read_pose.pose.position.x = start_point.pose.position.x + roation_matric_calc[0][0]
-            read_pose.pose.position.y = start_point.pose.position.y + roation_matric_calc[1][0]
-            read_pose.pose.position.z = 0
-            read_pose.pose.orientation.x = 0
-            read_pose.pose.orientation.y = 0
-            read_pose.pose.orientation.z = 0
-            read_pose.pose.orientation.w = 1
+            read_pose.pose.position.x=global_result[0][0]
+            read_pose.pose.position.y=global_result[1][0]
+            read_pose.pose.position.z=0
+            read_pose.pose.orientation.x=0
+            read_pose.pose.orientation.y=0
+            read_pose.pose.orientation.z=0
+            read_pose.pose.orientation.w=1
             out_path.poses.append(read_pose)
         
         # 직선 거리 추가
