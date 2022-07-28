@@ -13,14 +13,15 @@ from camera_utils import BEVTransform, CURVEFit, draw_lane_img
 from morai_msgs.msg import CtrlCmd, EgoVehicleStatus
 
 class IMGParser:
-    def __init__(self):
+    def __init__(self, pkg_name = 'ssafy_3'):
 
         self.image_sub = rospy.Subscriber("/image_jpeg/compressed", CompressedImage, self.callback)
         rospy.Subscriber("/Ego_topic",EgoVehicleStatus, self.status_callback)
 
         self.img_bgr = None
         self.img_lane = None
-        self.edges = None
+        self.edges = None 
+        self.is_status = False
 
         self.lower_wlane = np.array([0,0,205])
         self.upper_wlane = np.array([30,60,255])
@@ -28,14 +29,63 @@ class IMGParser:
         self.lower_ylane = np.array([0,70,120])# ([0,60,100])
         self.upper_ylane = np.array([40,195,230])# ([40,175,255])
 
-        self.crop_pts = np.array([[[0,480],[0,460],[280,220],[360,220],[640,460],[640,480]]])
+        self.crop_pts = np.array([[[0,480],[0,350],[280,200],[360,200],[640,350],[640,480]]])
+
+        rospack = rospkg.RosPack()
+        currentPath = rospack.get_path(pkg_name)
+        
+        with open(os.path.join(currentPath, 'sensor/sensor_params.json'), 'r') as fp:
+            sensor_params = json.load(fp)
+
+        params_cam = sensor_params["params_cam"]
+
+        bev_op = BEVTransform(params_cam=params_cam)
+        curve_learner = CURVEFit(order=3, lane_width=3.5 ,y_margin=1, x_range=30, min_pts=50)
+
+        rate = rospy.Rate(10)
+
+        while not rospy.is_shutdown():
+
+            if self.img_bgr is not None and self.is_status == True:
+
+                img_crop = self.mask_roi(self.img_bgr)
+
+                # cv2.imshow("birdview", img_crop)
+
+                img_warp = bev_op.warp_bev_img(img_crop)
+
+                img_lane = self.binarize(img_warp)
+
+                img_f = bev_op.warp_inv_img(img_lane)
+
+                lane_pts = bev_op.recon_lane_pts(img_f)
+
+                x_pred, y_pred_l, y_pred_r = curve_learner.fit_curve(lane_pts)
+                
+                curve_learner.set_vehicle_status(self.status_msg)
+
+                curve_learner.write_path_msg(x_pred, y_pred_l, y_pred_r)
+
+                curve_learner.pub_path_msg()
+
+                xyl, xyr = bev_op.project_lane2img(x_pred, y_pred_l, y_pred_r)
+
+                img_lane_fit = draw_lane_img(img_lane, xyl[:, 0].astype(np.int32),
+                                                    xyl[:, 1].astype(np.int32),
+                                                    xyr[:, 0].astype(np.int32),
+                                                    xyr[:, 1].astype(np.int32))
+
+                cv2.imshow("birdview", img_lane_fit)
+                cv2.imshow("img_warp", img_warp)
+                cv2.imshow("origin_img", self.img_bgr)
+
+                cv2.waitKey(1)
+
+                rate.sleep()
 
     def status_callback(self,msg): ## Vehicl Status Subscriber 
-        self.is_status=True
         self.status_msg=msg    
-        self.status_yaw = self.status_msg.heading
-        self.pos_x = self.status_msg.position.x
-        self.pos_y = self.status_msg.position.y
+        self.is_status = True
 
     def callback(self, msg):
         try:
@@ -45,7 +95,6 @@ class IMGParser:
             print(e)
 
     def binarize(self, img):
-
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
         img_wlane = cv2.inRange(img_hsv, self.lower_wlane, self.upper_wlane)
@@ -86,55 +135,9 @@ class IMGParser:
 
 
 if __name__ == '__main__':
-    
-    rp = rospkg.RosPack()
-    
-    currentPath = rp.get_path("ssafy_3")
-    
-    with open(os.path.join(currentPath, 'sensor/sensor_params.json'), 'r') as fp:
-        sensor_params = json.load(fp)
-
-    params_cam = sensor_params["params_cam"]
 
     rospy.init_node('lane_fitting', anonymous=True)
 
     image_parser = IMGParser()
-    bev_op = BEVTransform(params_cam=params_cam)
-    curve_learner = CURVEFit(order=3, lane_width=3.5 ,y_margin=1, x_range=30, min_pts=50)
 
-    rate = rospy.Rate(10)
-
-    while not rospy.is_shutdown():
-
-        if image_parser.img_bgr is not None:
-
-            img_crop = image_parser.mask_roi(image_parser.img_bgr)
-
-            img_warp = bev_op.warp_bev_img(img_crop)
-
-            img_lane = image_parser.binarize(img_warp)
-
-            img_f = bev_op.warp_inv_img(img_lane)
-
-            lane_pts = bev_op.recon_lane_pts(img_f)
-
-            x_pred, y_pred_l, y_pred_r = curve_learner.fit_curve(lane_pts)
-
-            curve_learner.write_path_msg(x_pred, y_pred_l, y_pred_r , image_parser.status_yaw/180*3.14,image_parser.pos_x,image_parser.pos_y)
-
-            curve_learner.pub_path_msg()
-
-            xyl, xyr = bev_op.project_lane2img(x_pred, y_pred_l, y_pred_r)
-
-            img_lane_fit = draw_lane_img(img_lane, xyl[:, 0].astype(np.int32),
-                                                xyl[:, 1].astype(np.int32),
-                                                xyr[:, 0].astype(np.int32),
-                                                xyr[:, 1].astype(np.int32))
-
-            cv2.imshow("birdview", img_lane_fit)
-            cv2.imshow("img_warp", img_warp)
-            cv2.imshow("origin_img", image_parser.img_bgr)
-
-            cv2.waitKey(1)
-
-            rate.sleep()
+    rospy.spin() 

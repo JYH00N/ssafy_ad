@@ -346,14 +346,12 @@ class CURVEFit:
     def update_lane_width(self, y_pred_l, y_pred_r):
         self.lane_width = np.clip(np.max(y_pred_l-y_pred_r), 3.5, 5)
     
-    def write_path_msg(self, x_pred, y_pred_l, y_pred_r, theta ,pos_x,pos_y,frame_id='/map'):
+    def write_path_msg(self, x_pred, y_pred_l, y_pred_r,frame_id='/map'):
         self.lane_path = Path()
-        
-        theta = theta
 
         trans_matrix = np.array([
-                                [math.cos(theta), -math.sin(theta),pos_x],
-                                [math.sin(theta),math.cos(theta),pos_y],
+                                [math.cos(self.vehicle_yaw), -math.sin(self.vehicle_yaw),self.vehicle_pos_x],
+                                [math.sin(self.vehicle_yaw),  math.cos(self.vehicle_yaw),self.vehicle_pos_y],
                                 [0,0,1]])
 
         self.lane_path.header.frame_id=frame_id
@@ -375,6 +373,12 @@ class CURVEFit:
     
     def pub_path_msg(self):
         self.path_pub.publish(self.lane_path)
+
+    def set_vehicle_status(self, vehicle_status):
+        self.vehicle_yaw = vehicle_status.heading/180*math.pi
+        self.vehicle_pos_x = vehicle_status.position.x
+        self.vehicle_pos_y = vehicle_status.position.y
+
 
 
 def draw_lane_img(img, leftx, lefty, rightx, righty):
