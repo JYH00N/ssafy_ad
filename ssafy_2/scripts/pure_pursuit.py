@@ -26,7 +26,7 @@ class pure_pursuit :
         rospy.init_node('pure_pursuit', anonymous=True)
 
         #TODO: (1) subscriber, publisher 선언
-        rospy.Subscriber("local_path", Path, self.path_callback)
+        rospy.Subscriber("lane_path", Path, self.path_callback)
         rospy.Subscriber("odom", Odometry, self.odom_callback)
         self.ctrl_cmd_pub = rospy.Publisher('ctrl_cmd',CtrlCmd, queue_size=1)
 

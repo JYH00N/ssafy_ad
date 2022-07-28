@@ -14,8 +14,7 @@ import rospy
 from nav_msgs.msg import Path,Odometry
 from geometry_msgs.msg import PoseStamped,Point
 
-def rotationMtx(yaw, pitch, roll):
-    
+def rotationMtx(yaw, pitch, roll):    
     R_x = np.array([[1,         0,              0,                0],
                     [0,         math.cos(roll), -math.sin(roll) , 0],
                     [0,         math.sin(roll), math.cos(roll)  , 0],
@@ -39,8 +38,7 @@ def rotationMtx(yaw, pitch, roll):
     return R
 
 
-def traslationMtx(x, y, z):
-     
+def traslationMtx(x, y, z):     
     M = np.array([[1,         0,              0,               x],
                   [0,         1,              0,               y],
                   [0,         0,              1,               z],
@@ -49,8 +47,7 @@ def traslationMtx(x, y, z):
     
     return M
 
-def project2img_mtx(params_cam):
-    
+def project2img_mtx(params_cam):    
     '''
     project the lidar points to 2d plane
     \n xc, yc, zc : xyz components of lidar points w.r.t a camera coordinate
@@ -58,13 +55,8 @@ def project2img_mtx(params_cam):
 
     '''
     # focal lengths
-    if params_cam["ENGINE"]=='UNITY':
-        fc_x = params_cam["HEIGHT"]/(2*np.tan(np.deg2rad(params_cam["FOV"]/2)))
-        fc_y = params_cam["HEIGHT"]/(2*np.tan(np.deg2rad(params_cam["FOV"]/2)))
-
-    else:
-        fc_x = params_cam["WIDTH"]/(2*np.tan(np.deg2rad(params_cam["FOV"]/2)))
-        fc_y = params_cam["WIDTH"]/(2*np.tan(np.deg2rad(params_cam["FOV"]/2)))
+    fc_x = params_cam["HEIGHT"]/(2*np.tan(np.deg2rad(params_cam["FOV"]/2)))
+    fc_y = params_cam["HEIGHT"]/(2*np.tan(np.deg2rad(params_cam["FOV"]/2)))
 
     #the center of image
     cx = params_cam["WIDTH"]/2
@@ -76,10 +68,8 @@ def project2img_mtx(params_cam):
 
     return R_f
 
-
 class BEVTransform:
     def __init__(self, params_cam, xb=10.0, zb=10.0):
-
         self.xb = xb
         self.zb = zb
 
@@ -88,21 +78,12 @@ class BEVTransform:
         self.height = params_cam["HEIGHT"]
         self.x = params_cam["X"]
         
-        if params_cam["ENGINE"]=="UNITY":
-            self.alpha_r = np.deg2rad(params_cam["FOV"]/2)
+        self.alpha_r = np.deg2rad(params_cam["FOV"]/2)
 
-            self.fc_y = params_cam["HEIGHT"]/(2*np.tan(np.deg2rad(params_cam["FOV"]/2)))
-            self.alpha_c = np.arctan2(params_cam["WIDTH"]/2, self.fc_y)
+        self.fc_y = params_cam["HEIGHT"]/(2*np.tan(np.deg2rad(params_cam["FOV"]/2)))
+        self.alpha_c = np.arctan2(params_cam["WIDTH"]/2, self.fc_y)
 
-            self.fc_x = self.fc_y
-
-        else:
-            self.alpha_c = np.deg2rad(params_cam["FOV"]/2)
-
-            self.fc_x = params_cam["WIDTH"]/(2*np.tan(np.deg2rad(params_cam["FOV"]/2)))
-            self.alpha_r = np.arctan2(params_cam["HEIGHT"]/2, self.fc_x)
-
-            self.fc_y = self.fc_x
+        self.fc_x = self.fc_y
             
         self.h = params_cam["Z"] + 0.34
 
@@ -118,7 +99,6 @@ class BEVTransform:
 
 
     def calc_Xv_Yu(self, U, V):
-
         Xv = self.h*(np.tan(self.theta)*(1-2*(V-1)/(self.m-1))*np.tan(self.alpha_r)-1)/\
             (-np.tan(self.theta)+(1-2*(V-1)/(self.m-1))*np.tan(self.alpha_r))
 
@@ -128,7 +108,6 @@ class BEVTransform:
 
 
     def _build_tf(self, params_cam):
-
         v = np.array([params_cam["HEIGHT"]*0.5, params_cam["HEIGHT"]]).astype(np.float32)
         u = np.array([0, params_cam["WIDTH"]]).astype(np.float32)
 
@@ -154,21 +133,18 @@ class BEVTransform:
 
 
     def warp_bev_img(self, img):
-
         img_warp = cv2.warpPerspective(img, self.perspective_tf, (self.width, self.height), flags=cv2.INTER_LINEAR)
         
         return img_warp
 
     
-    def warp_inv_img(self, img_warp):
-    
+    def warp_inv_img(self, img_warp):    
         img_f = cv2.warpPerspective(img_warp, self.perspective_inv_tf, (self.width, self.height), flags=cv2.INTER_LINEAR)
         
         return img_f
 
 
     def recon_lane_pts(self, img):
-
         if cv2.countNonZero(img) != 0:
     
             UV_mark = cv2.findNonZero(img).reshape([-1,2])
@@ -191,7 +167,6 @@ class BEVTransform:
 
 
     def project_lane2img(self, x_pred, y_pred_l, y_pred_r):
-
         xyz_l_g = np.concatenate([x_pred.reshape([1,-1]),
                                   y_pred_l.reshape([1,-1]),
                                   np.zeros_like(y_pred_l.reshape([1,-1])),
@@ -217,7 +192,6 @@ class BEVTransform:
         
 
     def project_pts2img(self, xyz_bird):
-
         xc, yc, zc = xyz_bird[0,:].reshape([1,-1]), xyz_bird[1,:].reshape([1,-1]), xyz_bird[2,:].reshape([1,-1])
 
         xn, yn = xc/(zc+0.0001), yc/(zc+0.0001)
@@ -229,15 +203,12 @@ class BEVTransform:
         return xyi
 
     def crop_pts(self, xyi):
-
         xyi = xyi[np.logical_and(xyi[:, 0]>=0, xyi[:, 0]<self.width), :]
         xyi = xyi[np.logical_and(xyi[:, 1]>=0, xyi[:, 1]<self.height), :]
 
         return xyi
 
-
-class CURVEFit:
-    
+class CURVEFit:    
     def __init__(
         self,
         order=3,
@@ -274,8 +245,7 @@ class CURVEFit:
 
         self.path_pub = rospy.Publisher('/lane_path', Path, queue_size=30)
 
-    def _init_model(self):
-        
+    def _init_model(self):        
         X = np.stack([np.arange(0, 2, 0.02)**i for i in reversed(range(1, self.order+1))]).T
         y_l = 0.5*self.lane_width*np.ones_like(np.arange(0, 2, 0.02))
         y_r = -0.5*self.lane_width*np.ones_like(np.arange(0, 2, 0.02))
@@ -285,7 +255,6 @@ class CURVEFit:
 
 
     def preprocess_pts(self, lane_pts):
-
         idx_list = []
 
         for d in np.arange(0, self.x_range, self.dx):
@@ -314,7 +283,6 @@ class CURVEFit:
         return x_left, y_left, x_right, y_right
 
     def fit_curve(self, lane_pts):
-
         x_left, y_left, x_right, y_right = self.preprocess_pts(lane_pts)
         
         if len(y_left)==0 or len(y_right)==0:
@@ -376,28 +344,36 @@ class CURVEFit:
         return x_pred, y_pred_l, y_pred_r
 
     def update_lane_width(self, y_pred_l, y_pred_r):
-
         self.lane_width = np.clip(np.max(y_pred_l-y_pred_r), 3.5, 5)
     
-    def write_path_msg(self, x_pred, y_pred_l, y_pred_r, frame_id='/map'):
-
+    def write_path_msg(self, x_pred, y_pred_l, y_pred_r, theta ,pos_x,pos_y,frame_id='/map'):
         self.lane_path = Path()
+        
+        theta = theta
+
+        trans_matrix = np.array([
+                                [math.cos(theta), -math.sin(theta),pos_x],
+                                [math.sin(theta),math.cos(theta),pos_y],
+                                [0,0,1]])
 
         self.lane_path.header.frame_id=frame_id
 
         for i in range(len(x_pred)) :
+
+            local_result=np.array([[x_pred[i]],[(0.5)*(y_pred_l[i] + y_pred_r[i])],[1]])
+            global_result=trans_matrix.dot(local_result)
+
             tmp_pose=PoseStamped()
-            tmp_pose.pose.position.x=x_pred[i]
-            tmp_pose.pose.position.y=(0.5)*(y_pred_l[i] + y_pred_r[i])
-            tmp_pose.pose.position.z=0
-            tmp_pose.pose.orientation.x=0
-            tmp_pose.pose.orientation.y=0
-            tmp_pose.pose.orientation.z=0
-            tmp_pose.pose.orientation.w=1
+            tmp_pose.pose.position.x = global_result[0][0]
+            tmp_pose.pose.position.y = global_result[1][0]
+            tmp_pose.pose.position.z = 0
+            tmp_pose.pose.orientation.x = 0
+            tmp_pose.pose.orientation.y = 0
+            tmp_pose.pose.orientation.z = 0
+            tmp_pose.pose.orientation.w = 1
             self.lane_path.poses.append(tmp_pose)
     
     def pub_path_msg(self):
-
         self.path_pub.publish(self.lane_path)
 
 
@@ -418,86 +394,3 @@ def draw_lane_img(img, leftx, lefty, rightx, righty):
         point_np = cv2.circle(point_np, ctr, 2, (0,0,255),-1)
 
     return point_np
-
-
-class purePursuit :
-    def __init__(
-        self,
-        lfd,
-        vehicle_length=2,
-        min_lfd=2,
-        max_lfd=50
-        ):
-
-        self.is_look_forward_point = False
-        self.vehicle_length = vehicle_length
-
-        self.lfd = lfd
-        self.min_lfd = min_lfd
-        self.max_lfd = max_lfd
-
-        self.status_sub = rospy.Subscriber("/Ego_topic", EgoVehicleStatus, self.statusCB)
-        self.lpath_sub = rospy.Subscriber('/lane_path', Path, self.lane_path_callback)
-        self.cmd_pub = rospy.Publisher('/ctrl_cmd', CtrlCmd, queue_size=1)
-        
-        self.lpath = None
-        self.ctrl_msg = CtrlCmd()
-        self.current_vel = None
-
-
-    def statusCB(self,data):
-
-        self.current_vel = data.velocity.x
-
-
-    def lane_path_callback(self, msg):
-        
-        self.lpath = msg
-
-
-    def steering_angle(self):
-
-        self.is_look_forward_point= False
-
-        for i in self.lpath.poses:
-
-            path_point=i.pose.position
-            
-            if path_point.x>0 :
-
-                dis_i = np.sqrt(np.square(path_point.x) + np.square(path_point.y))
-                
-                if dis_i>= self.lfd :
-
-                    self.is_look_forward_point=True
-                    
-                    break
-        
-        theta=math.atan2(path_point.y, path_point.x)
-
-        if self.is_look_forward_point :
-            steering_deg=math.atan2((2*self.vehicle_length*math.sin(theta)), self.lfd)*180/math.pi #deg
-            
-            self.ctrl_msg.steering=steering_deg*math.pi/180
-        else : 
-            self.ctrl_msg.steering=0.0
-            print("no found forward point")
-
-
-    def calc_acc(self, target_vel):
-
-        err = target_vel - self.current_vel
-
-        control_input = 1*err
-
-        if control_input > 0 :
-            self.ctrl_msg.accel= control_input
-            self.ctrl_msg.brake= 0
-        else :
-            self.ctrl_msg.accel= 0
-            self.ctrl_msg.brake= -control_input
-
-
-    def pub_cmd(self):
-        self.cmd_pub.publish(self.ctrl_msg)
-

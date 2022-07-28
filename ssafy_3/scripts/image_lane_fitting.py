@@ -10,22 +10,32 @@ from sensor_msgs.msg import CompressedImage
 from cv_bridge import CvBridgeError
 
 from camera_utils import BEVTransform, CURVEFit, draw_lane_img
+from morai_msgs.msg import CtrlCmd, EgoVehicleStatus
 
 class IMGParser:
     def __init__(self):
 
         self.image_sub = rospy.Subscriber("/image_jpeg/compressed", CompressedImage, self.callback)
+        rospy.Subscriber("/Ego_topic",EgoVehicleStatus, self.status_callback)
+
         self.img_bgr = None
         self.img_lane = None
         self.edges = None
 
-        self.lower_wlane = np.array([0,0,185])
+        self.lower_wlane = np.array([0,0,205])
         self.upper_wlane = np.array([30,60,255])
 
         self.lower_ylane = np.array([0,70,120])# ([0,60,100])
         self.upper_ylane = np.array([40,195,230])# ([40,175,255])
 
         self.crop_pts = np.array([[[0,480],[0,460],[280,220],[360,220],[640,460],[640,480]]])
+
+    def status_callback(self,msg): ## Vehicl Status Subscriber 
+        self.is_status=True
+        self.status_msg=msg    
+        self.status_yaw = self.status_msg.heading
+        self.pos_x = self.status_msg.position.x
+        self.pos_y = self.status_msg.position.y
 
     def callback(self, msg):
         try:
@@ -79,7 +89,7 @@ if __name__ == '__main__':
     
     rp = rospkg.RosPack()
     
-    currentPath = rp.get_path("beginner_tutorials")
+    currentPath = rp.get_path("ssafy_3")
     
     with open(os.path.join(currentPath, 'sensor/sensor_params.json'), 'r') as fp:
         sensor_params = json.load(fp)
@@ -110,7 +120,7 @@ if __name__ == '__main__':
 
             x_pred, y_pred_l, y_pred_r = curve_learner.fit_curve(lane_pts)
 
-            curve_learner.write_path_msg(x_pred, y_pred_l, y_pred_r)
+            curve_learner.write_path_msg(x_pred, y_pred_l, y_pred_r , image_parser.status_yaw/180*3.14,image_parser.pos_x,image_parser.pos_y)
 
             curve_learner.pub_path_msg()
 
