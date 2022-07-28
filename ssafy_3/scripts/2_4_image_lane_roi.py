@@ -57,16 +57,12 @@ class IMGParser:
         
         if len(img.shape)==3:
 
-            # image shape : [h, w, 3]
-
             c = img.shape[2]
             mask = np.zeros((h, w, c), dtype=np.uint8)
 
             mask_value = (255, 255, 255)
 
         else:
-
-            # binarized image or grayscale image : [h, w]
 
             mask = np.zeros((h, w), dtype=np.uint8)
 
