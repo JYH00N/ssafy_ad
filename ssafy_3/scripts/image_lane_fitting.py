@@ -49,9 +49,7 @@ class IMGParser:
             if self.img_bgr is not None and self.is_status == True:
 
                 img_crop = self.mask_roi(self.img_bgr)
-
-                # cv2.imshow("birdview", img_crop)
-
+                
                 img_warp = bev_op.warp_bev_img(img_crop)
 
                 img_lane = self.binarize(img_warp)
