@@ -6,7 +6,6 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /Object_data1
       Splitter Ratio: 0.5
     Tree Height: 621
   - Class: rviz/Selection
@@ -77,7 +76,7 @@ Visualization Manager:
       Buffer Length: 1
       Class: rviz/Path
       Color: 25; 255; 0
-      Enabled: false
+      Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -95,12 +94,12 @@ Visualization Manager:
       Shaft Length: 0.10000000149011612
       Topic: /global_path
       Unreliable: false
-      Value: false
+      Value: true
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
       Color: 255; 0; 0
-      Enabled: false
+      Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -118,7 +117,7 @@ Visualization Manager:
       Shaft Length: 0.10000000149011612
       Topic: /local_path
       Unreliable: false
-      Value: false
+      Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -179,7 +178,7 @@ Visualization Manager:
       Buffer Length: 1
       Class: rviz/Path
       Color: 255; 0; 237
-      Enabled: false
+      Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -197,7 +196,7 @@ Visualization Manager:
       Shaft Length: 0.10000000149011612
       Topic: /lane_path
       Unreliable: false
-      Value: false
+      Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -254,7 +253,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 27.441139221191406
+      Distance: 66.8070068359375
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -269,10 +268,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7753985524177551
+      Pitch: 0.910398542881012
       Target Frame: Ego
       Value: Orbit (rviz)
-      Yaw: 4.1635847091674805
+      Yaw: 4.093585968017578
     Saved: ~
 Window Geometry:
   Displays:

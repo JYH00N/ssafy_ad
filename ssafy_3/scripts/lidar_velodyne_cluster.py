@@ -10,7 +10,6 @@ from geometry_msgs.msg import PoseArray,Pose
 from sklearn.cluster import DBSCAN
 
 class SCANCluster:
-
     def __init__(self):
 
         self.scan_sub = rospy.Subscriber("/velodyne_points", PointCloud2, self.callback)

@@ -9,9 +9,7 @@ import sensor_msgs.point_cloud2 as pc2
 from std_msgs.msg import Float32
 
 class SCANParser:
-
     def __init__(self):
-
         self.scan_sub = rospy.Subscriber("/velodyne_points", PointCloud2, self.callback)
 
         self.dist_pub = rospy.Publisher("dist_forward", Float32, queue_size=10)
