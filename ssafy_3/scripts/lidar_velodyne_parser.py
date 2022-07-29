@@ -9,7 +9,9 @@ import sensor_msgs.point_cloud2 as pc2
 from std_msgs.msg import Float32
 
 class SCANParser:
+
     def __init__(self):
+
         self.scan_sub = rospy.Subscriber("/velodyne_points", PointCloud2, self.callback)
 
         self.dist_pub = rospy.Publisher("dist_forward", Float32, queue_size=10)
@@ -17,7 +19,8 @@ class SCANParser:
         self.pc_np = None
 
 
-    def callback(self, msg):    
+    def callback(self, msg):
+    
         self.pc_np = self.pointcloud2_to_xyz(msg)
 
         d_min = self.calc_dist_forward()
@@ -30,6 +33,7 @@ class SCANParser:
 
 
     def pointcloud2_to_xyz(self, cloud_msg):
+
         point_list = []
         
         for point in pc2.read_points(cloud_msg, skip_nans=True):
@@ -47,6 +51,7 @@ class SCANParser:
 
 
     def calc_dist_forward(self):
+
         r1_bool = self.pc_np[:, 5] > -30/180*np.pi
 
         r2_bool = self.pc_np[:, 5] < 30/180*np.pi
