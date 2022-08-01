@@ -12,7 +12,6 @@ from sensor_msgs.msg import PointCloud
 current_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(current_path)
 
-
 from lib.mgeo.class_defs import *
 
 # mgeo_pub 은 Mgeo 데이터를 읽어온 뒤 도로 정보를 Point Cloud Data 로 변환하는 예제입니다.
