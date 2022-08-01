@@ -11,7 +11,7 @@ import numpy as np
 import tf
 from tf.transformations import euler_from_quaternion,quaternion_from_euler
 
-# velocity_planning 은 차량의 차량의 종 횡 방향 제어 예제입니다.
+# velocity_planning 은 차량의 종 횡 방향 제어 예제입니다.
 # 차량의 곡률 기반 속도 계획을 세워 주행 경로에 맞는 속도 계획을 할 수 있는 예제 입니다.
 # 횡방향 제어 입력은 주행할 Local Path (지역경로) 와 차량의 상태 정보 Odometry 를 받아 차량을 제어 합니다.
 # 종방향 제어 입력은 목표 속도를 지정 한뒤 목표 속도에 도달하기 위한 Throttle control 을 합니다.
