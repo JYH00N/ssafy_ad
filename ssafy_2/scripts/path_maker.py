@@ -15,19 +15,12 @@ from nav_msgs.msg import Odometry,Path
 # 2. 콜백함수에서 처음 메시지가 들어오면 초기 위치를 저장
 # 3. 콜백함수에서 이전 위치와 현재 위치의 거리 계산
 # 4. 이전 위치보다 0.3m 이상일 때 위치를 저장
-# 5. Global Path publisher 선언 및 Global Path 변수 생성 
-# 6. Global Path 정보 Publish
 
 class pathMaker :    
     def __init__(self, pkg_name = 'ssafy_2', path_name = 'make_path'):
         rospy.init_node('path_maker', anonymous=True)
 
         rospy.Subscriber("/odom", Odometry, self.odom_callback)
-
-        #TODO: (5) Global Path publisher 선언 및 Global Path 변수 생성
-        self.global_path_pub = rospy.Publisher('/global_path',Path, queue_size=1)
-        self.global_path_msg = Path()
-        self.global_path_msg.header.frame_id = '/map'
 
         # 초기화
         self.prev_x = 0
@@ -62,14 +55,6 @@ class pathMaker :
             self.prev_z=z
             
             print(' write [ x : {} , y : {} ]'.format(x,y))
-
-            #TODO: (6) Global Path 정보 Publish
-            read_pose=PoseStamped()
-            read_pose.pose.position.x = x
-            read_pose.pose.position.y = y
-            read_pose.pose.orientation.w = 1
-            self.global_path_msg.poses.append(read_pose) 
-            self.global_path_pub.publish(self.global_path_msg)
 
     def odom_callback(self,msg):
         self.is_odom = True

@@ -14,7 +14,7 @@ from nav_msgs.msg import Odometry,Path
 # 1. Global Path 와 Odometry 데이터 subscriber 생성 
 # 2. Local Path publisher 선언
 # 3. Local Path 의 Size 결정
-# 4. 콜백함수에서 처음 메시지가 들어오면 초기 위치를 저장
+# 4. 콜백함수에서 처음 메시지가 들어오면 현재 위치를 저장
 # 5. Global Path 에서 차량 위치와 가장 가까운 포인트(Currenty Waypoint) 탐색
 # 6. 가장 가까운 포인트(Currenty Waypoint) 위치부터 Local Path 생성 및 예외 처리 
 # 7. Local Path 메세지 Publish
@@ -83,7 +83,7 @@ class local_path_pub :
 
     def odom_callback(self,msg):
         self.is_odom = True
-        #TODO: (4) 콜백함수에서 처음 메시지가 들어오면 초기 위치를 저장
+        #TODO: (4) 콜백함수에서 처음 메시지가 들어오면 현재 위치를 저장
         self.x = msg.pose.pose.position.x
         self.y = msg.pose.pose.position.y
 
