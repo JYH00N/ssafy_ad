@@ -125,6 +125,8 @@ class pure_pursuit :
         theta = atan2(local_path_point[1],local_path_point[0])
         steering = atan2((2*self.vehicle_length*sin(theta)),self.lfd)
 
+        return steering
+
 class pidControl:
     def __init__(self):
         self.p_gain = 0.3
