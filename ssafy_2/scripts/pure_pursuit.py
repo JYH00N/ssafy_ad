@@ -102,8 +102,8 @@ class pure_pursuit :
                     self.is_look_forward_point = True
                     break
         
-        theta = atan2(local_path_point[1],local_path_point[0])
         #TODO: (3) Steering 각도 계산
+        theta = atan2(local_path_point[1],local_path_point[0])
         steering = atan2((2*self.vehicle_length*sin(theta)),self.lfd)
 
         return steering
