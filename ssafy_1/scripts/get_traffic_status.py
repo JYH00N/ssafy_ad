@@ -4,8 +4,8 @@
 import rospy
 from morai_msgs.msg import GetTrafficLightStatus
 
-# Collision_listener 는 시뮬레이터에서 송신하는 Collision 정보를 Subscriber 하는 예제 입니다.
-# 시뮬레이터 내 Ego 차량의 충돌 정보인 /CollisionData 라는 메세지를 Subscribe 합니다.
+# traffic_listener 는 시뮬레이터에서 송신하는 Traffic Light 정보를 Subscriber 하는 예제 입니다.
+# 시뮬레이터 내 traffic Light 정보인 /GetTrafficLightStatus 라는 메세지를 Subscribe 합니다.
 
 # 노드 실행 순서 
 # 1. ROS 노드 이름 선언
