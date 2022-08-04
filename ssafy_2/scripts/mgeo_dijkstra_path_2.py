@@ -26,9 +26,9 @@ from lib.mgeo.class_defs import *
 # 1. Mgeo data 읽어온 후 데이터 확인
 # 2. 시작 Node 계산
 # 3. 종료 Node 계산
-# 4. Dijkstra Path 초기화 로직
-# 5. Dijkstra 핵심 코드
-# 6. weight 값 계산
+# 4. weight 값 계산
+# 5. Dijkstra Path 초기화 로직
+# 6. Dijkstra 핵심 코드
 # 7. node path 생성
 # 8. link path 생성
 # 9. Result 판별
@@ -143,7 +143,7 @@ class Dijkstra:
         self.lane_change_link_idx = []
 
     def get_weight_matrix(self):
-        #TODO: (6) weight 값 계산
+        #TODO: (4) weight 값 계산
         # 초기 설정
         weight = dict() 
         for from_node_id, from_node in self.nodes.items():
@@ -160,11 +160,32 @@ class Dijkstra:
 
             for to_node in from_node.get_to_nodes():
                 # 현재 노드에서 to_node로 연결되어 있는 링크를 찾고, 그 중에서 가장 빠른 링크를 찾아준다
-                shortest_link, min_cost = from_node.find_shortest_link_leading_to_node(to_node)
+                shortest_link, min_cost = self.find_shortest_link_leading_to_node(from_node,to_node)
                 weight[from_node_id][to_node.idx] = min_cost           
 
         return weight
-        
+    
+    def find_shortest_link_leading_to_node(self,from_node, to_node):
+        """현재 노드에서 to_node로 연결되어 있는 링크를 찾고, 그 중에서 가장 빠른 링크를 찾아준다"""
+        #TODO: (4) weight 값 계산
+        # NOTE: 
+        to_links = []
+        for link in self.get_to_links():
+            if link.to_node is to_node:
+                to_links.append(link)
+
+        if len(to_links) == 0:
+            raise BaseException('[ERROR] Error @ Dijkstra.find_shortest_path : Internal data error. There is no link from node (id={}) to node (id={})'.format(self.idx, to_node.idx))
+
+        shortest_link = None
+        min_cost = float('inf')
+        for link in to_links:
+            if link.cost < min_cost:
+                min_cost = link.cost
+                shortest_link = link
+
+        return shortest_link, min_cost
+
     def find_nearest_node_idx(self, distance, s):        
         idx_list = self.nodes.keys()
         min_value = float('inf')
@@ -177,7 +198,7 @@ class Dijkstra:
         return min_idx
 
     def find_shortest_path(self, start_node_idx, end_node_idx): 
-        #TODO: (4) Dijkstra Path 초기화 로직
+        #TODO: (5) Dijkstra Path 초기화 로직
         # s 초기화         >> s = [False] * len(self.nodes)
         # from_node 초기화 >> from_node = [start_node_idx] * len(self.nodes)
         s = dict()
@@ -189,7 +210,7 @@ class Dijkstra:
         s[start_node_idx] = True
         distance =copy.deepcopy(self.weight[start_node_idx])
 
-        #TODO: (5) Dijkstra 핵심 코드
+        #TODO: (6) Dijkstra 핵심 코드
         for i in range(len(self.nodes.keys()) - 1):
             selected_node_idx = self.find_nearest_node_idx(distance, s)
             s[selected_node_idx] = True            
@@ -219,7 +240,7 @@ class Dijkstra:
             from_node = self.nodes[from_node_idx]
             to_node = self.nodes[to_node_idx]
 
-            shortest_link, min_cost = from_node.find_shortest_link_leading_to_node(to_node)
+            shortest_link, min_cost = self.find_shortest_link_leading_to_node(from_node,to_node)
             link_path.append(shortest_link.idx)
 
         #TODO: (9) Result 판별
