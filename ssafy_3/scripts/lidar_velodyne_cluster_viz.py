@@ -10,7 +10,7 @@ import sensor_msgs.point_cloud2 as pc2
 from geometry_msgs.msg import PoseArray,Pose, Point32
 from sklearn.cluster import DBSCAN
 
-from morai_msgs.msg import EgoVehicleStatus
+from morai_msgs.msg import EgoVehicleStatus,ObjectStatusList,ObjectStatus
 
 class Cluster_viz:
 
@@ -19,7 +19,8 @@ class Cluster_viz:
         rospy.Subscriber("/clusters", PoseArray, self.callback)
         rospy.Subscriber("/Ego_topic",EgoVehicleStatus, self.status_callback)
 
-        self.object_data_pub = rospy.Publisher('object_data',PointCloud, queue_size=1)
+        self.object_pointcloud_pub = rospy.Publisher('object_pointcloud_data',PointCloud, queue_size=1)
+        self.object_data_pub = rospy.Publisher('Object_topic_to_lidar',ObjectStatusList, queue_size=1)
 
         self.is_status = False
         self.cluster_status = False
@@ -47,7 +48,7 @@ class Cluster_viz:
                     tmp_point.z = 1.
                     obj_data.points.append(tmp_point)
 
-                self.object_data_pub.publish(obj_data)
+                self.object_pointcloud_pub.publish(obj_data)
 
             rate.sleep()
 
