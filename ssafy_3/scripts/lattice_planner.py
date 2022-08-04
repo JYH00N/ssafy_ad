@@ -7,10 +7,22 @@ from geometry_msgs.msg import Point,PoseStamped, Point32
 from nav_msgs.msg import Path
 import numpy as np
 
+# lattice_planner은 충돌 회피 경로 생성 및 선택 예제입니다.
+# 차량 경로상의 장애물을 탐색하여 충돌 여부의 판단은 지역경로(/local_path) 와 장애물 정보(/Object_topic)를 받아 판단합니다.
+# 충돌이 예견될 경우 회피경로를 생성 및 선택 하고 새로운 지역경로(/lattice_path)를 Pulish합니다.
+
+# 노드 실행 순서 
+# 1. subscriber, publisher 선언
+# 2. 경로상의 장애물 탐색
+# 3. 충돌회피 경로 생성
+# 4. 생성된 충돌회피 경로 중 낮은 비용의 경로 선택
+# 5. 선택 된 새로운 지역경로 (/lattice_path) 메세지 Publish
+
 class latticePlanner:
     def __init__(self):
         rospy.init_node('lattice_planner', anonymous=True)
 
+        #TODO: (1) subscriber, publisher 선언
         rospy.Subscriber("/local_path", Path, self.path_callback)
         rospy.Subscriber("/Ego_topic",EgoVehicleStatus, self.status_callback)
         rospy.Subscriber("/Object_topic",ObjectStatusList, self.object_callback)
@@ -28,12 +40,20 @@ class latticePlanner:
                 if self.checkObject(self.local_path, self.object_data):
                     lattice_path = self.latticePlanner(self.local_path, self.status_msg)
                     lattice_path_index = self.collision_check(self.object_data, lattice_path)
+
+                    #TODO: (5) 제어입력 메세지 Publish
                     self.lattice_path_pub.publish(lattice_path[lattice_path_index])
                 else:
                     self.lattice_path_pub.publish(self.local_path)
             rate.sleep()
 
-    def latticePlanner(self,ref_path,vehicle_status):
+    def latticePlanner(self,ref_path, vehicle_status):
+        #TODO : (3) 충돌회피 경로 생성
+        """
+        Map좌표계의 경로에서 시작점의 시작점과, 바꾸려는 경로의 완료점을 
+        Local 좌표계로 변경 후 3차곡선계획법에 의해 경로를 생성한 후 다시 Map 좌표계로
+        가져온다.
+        """
         out_path = []
         vehicle_pose_x = vehicle_status.position.x
         vehicle_pose_y = vehicle_status.position.y
@@ -47,7 +67,7 @@ class latticePlanner:
 
         if len(ref_path.poses) > look_distance :
 
-            global_ref_start_point = (ref_path.poses[0].pose.position.x, ref_path.poses[0].pose.position.y)
+            global_ref_start_point      = (ref_path.poses[0].pose.position.x, ref_path.poses[0].pose.position.y)
             global_ref_start_next_point = (ref_path.poses[1].pose.position.x, ref_path.poses[1].pose.position.y)
 
             global_ref_end_point = (ref_path.poses[look_distance * 2].pose.position.x, ref_path.poses[look_distance * 2].pose.position.y)
@@ -89,7 +109,8 @@ class latticePlanner:
                 a[1] = 0
                 a[2] = 3.0 * (pf - ps) / (xf * xf)
                 a[3] = -2.0 * (pf - ps) / (xf * xf * xf)
-
+                
+                # 3차 곡선 계획
                 for i in x:
                     result = a[3] * i * i * i + a[2] * i * i + a[1] * i + a[0]
                     y.append(result)
@@ -140,21 +161,20 @@ class latticePlanner:
         return out_path
 
     def checkObject(self, ref_path, object_data):
-        """
-        objcet_data type = morai_msgs/ObjectList
-        """
+        #TODO: (2) 경로상의 장애물 탐색
 
         is_crash = False
         for obstacle in object_data.obstacle_list:
             for path in ref_path.poses:  
                 dis = sqrt(pow(path.pose.position.x - obstacle.position.x, 2) + pow(path.pose.position.y - obstacle.position.y, 2))                
-                if dis < 2.35:
+                if dis < 2.35: # 장애물의 좌표값이 지역 경로 상의 좌표값과의 직선거리가 2.35 미만일때 충돌이라 판단.
                     is_crash = True
                     break
 
         return is_crash
 
     def collision_check(self, object_data, out_path):
+        #TODO: (4) 생성된 충돌회피 경로 중 낮은 비용의 경로 선택
         
         selected_lane = -1        
         lane_weight = [3, 2, 1, 1, 2, 3] #reference path 

@@ -5,7 +5,6 @@
     <node pkg="ssafy_2" type="local_path_pub.py" name="local_path_pub" />    
     <node pkg="ssafy_2" type="tf_pub.py" name="tf"  />
     <node pkg="ssafy_3" type="image_lane_fitting.py" name="image_lane_fitting" />
-    <node pkg="ssafy_3" type="pure_pursuit_lane_detection.py" name="pure_pursuit_lane_detection"  />
-
+    <node pkg="ssafy_3" type="advanced_purepursuit.py" name="advanced_purepursuit"  />
     <node pkg="rviz" type="rviz" name="rviz" args="-d $(find ssafy_3)/rviz/lane_detection_rviz.rviz" />
 </launch>
