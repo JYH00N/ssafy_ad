@@ -31,6 +31,7 @@ class lc_path_pub :
         #TODO: (1) subscriber, publisher 선언
         rospy.Subscriber("odom", Odometry, self.odom_callback)
         rospy.Subscriber("/Object_topic", ObjectStatusList, self.object_info_callback)
+        rospy.Subscriber("/Object_topic_to_lidar", ObjectStatusList, self.object_info_callback)
         self.global_path_pub = rospy.Publisher('/global_path',Path, queue_size=1)
         self.local_path_pub = rospy.Publisher('/local_path',Path, queue_size=1)
 

@@ -1,7 +1,11 @@
 <launch>
     <node pkg="ssafy_2" type="mgeo_pub.py" name="mgeo_pub"  />
-    <node pkg="ssafy_2" type="gpsimu_parser.py" name="gpsimu_parser" />  
+    <node pkg="ssafy_2" type="gpsimu_parser.py" name="gpsimu_parser" />
     <node pkg="ssafy_2" type="tf_pub.py" name="tf"  />
+    <!-- <node pkg="ssafy_3" type="lane_change_1.py" name="lane_change" /> -->
+    <!-- <node pkg="ssafy_3" type="lane_change_2.py" name="lane_change" /> -->
+    <node pkg="ssafy_3" type="lane_change_3.py" name="lane_change" />
+    <node pkg="ssafy_3" type="advanced_purepursuit.py" name="advanced_purepursuit"  />
     <node pkg="ssafy_3" type="lidar_velodyne_cluster.py" name="lidar_velodyne_cluster"  />
     <node pkg="ssafy_3" type="lidar_velodyne_cluster_viz.py" name="lidar_velodyne_cluster_viz"  />
 
