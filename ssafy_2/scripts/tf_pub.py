@@ -33,7 +33,7 @@ class Ego_listener():
 
         #TODO: (2) 브로드캐스터 생성 및 Ego 상태 tf 브로드캐스팅
         br = tf.TransformBroadcaster()
-        br.sendTransform((self.x, self.y, 2),
+        br.sendTransform((self.x, self.y, 1),
                         (self.orientation_x,self.orientation_y,self.orientation_z,self.orientation_w),
                         rospy.Time.now(),
                         "Ego",
