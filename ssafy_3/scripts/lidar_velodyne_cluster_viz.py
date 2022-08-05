@@ -37,9 +37,16 @@ class Cluster_viz:
                 obj_data=PointCloud()
                 obj_data.header.frame_id='map'
 
-                self.define_object_data(self.cluster_data,trans_matrix)
+                # self.define_object_data(self.cluster_data,trans_matrix)
 
-                for i in self.cluster_data.poses :
+                cluster_obj_data = ObjectStatusList()
+                cluster_obj_data_npc = ObjectStatus()
+                cluster_obj_data_obstacle = ObjectStatus()
+
+                cluster_obj_data.num_of_npcs = len(self.cluster_data.poses)
+                cluster_obj_data.num_of_obstacle = len(self.cluster_data.poses)
+
+                for num,i in enumerate(self.cluster_data.poses) :
 
                     local_result=np.array([[i.position.x], [i.position.y],[1]])
                     global_result=trans_matrix.dot(local_result)
@@ -50,7 +57,21 @@ class Cluster_viz:
                     tmp_point.z = 1.
                     obj_data.points.append(tmp_point)
 
+                    cluster_obj_data_npc.type = 1
+                    cluster_obj_data_npc.position.x = global_result[0][0]
+                    cluster_obj_data_npc.position.y = global_result[1][0]
+                    cluster_obj_data_npc.position.z = 1.
+                    cluster_obj_data.npc_list.append(cluster_obj_data_npc)
+
+                    cluster_obj_data_obstacle.type = 2
+                    cluster_obj_data_obstacle.position.x = global_result[0][0]
+                    cluster_obj_data_obstacle.position.y = global_result[1][0]
+                    cluster_obj_data_obstacle.position.z = 1.
+                    cluster_obj_data.obstacle_list.append(cluster_obj_data_obstacle)
+
                 self.object_pointcloud_pub.publish(obj_data)
+
+                self.object_data_pub.publish(cluster_obj_data)
 
             rate.sleep()
 

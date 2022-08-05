@@ -25,8 +25,8 @@ class latticePlanner:
         #TODO: (1) subscriber, publisher 선언
         rospy.Subscriber("/local_path", Path, self.path_callback)
         rospy.Subscriber("/Ego_topic",EgoVehicleStatus, self.status_callback)
-        rospy.Subscriber("/Object_topic",ObjectStatusList, self.object_callback)
-        # rospy.Subscriber("/Object_topic_to_lidar",ObjectStatusList, self.object_callback)
+        # rospy.Subscriber("/Object_topic",ObjectStatusList, self.object_callback)
+        rospy.Subscriber("/Object_topic_to_lidar",ObjectStatusList, self.object_callback)
 
         self.lattice_path_pub = rospy.Publisher('/lattice_path', Path, queue_size = 1)
 
@@ -34,7 +34,7 @@ class latticePlanner:
         self.is_status = False
         self.is_obj = False
 
-        rate = rospy.Rate(30) # 30hz
+        rate = rospy.Rate(50) # 30hz
         while not rospy.is_shutdown():
 
             if self.is_path and self.is_status and self.is_obj:
