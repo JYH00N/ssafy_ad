@@ -25,8 +25,8 @@ class latticePlanner:
         #TODO: (1) subscriber, publisher 선언
         rospy.Subscriber("/local_path", Path, self.path_callback)
         rospy.Subscriber("/Ego_topic",EgoVehicleStatus, self.status_callback)
-        # rospy.Subscriber("/Object_topic",ObjectStatusList, self.object_callback)
-        rospy.Subscriber("/Object_topic_to_lidar",ObjectStatusList, self.object_callback)
+        rospy.Subscriber("/Object_topic",ObjectStatusList, self.object_callback)
+        # rospy.Subscriber("/Object_topic_to_lidar",ObjectStatusList, self.object_callback)
 
         self.lattice_path_pub = rospy.Publisher('/lattice_path', Path, queue_size = 1)
 
@@ -63,8 +63,8 @@ class latticePlanner:
         look_distance = int(vehicle_velocity * 0.2 * 2)
 
         
-        if look_distance < 10 : #min 10m   
-            look_distance = 10                    
+        if look_distance < 20 : #min 10m   
+            look_distance = 20                    
 
         if len(ref_path.poses) > look_distance :
 
@@ -168,7 +168,7 @@ class latticePlanner:
         for obstacle in object_data.obstacle_list:
             for path in ref_path.poses:  
                 dis = sqrt(pow(path.pose.position.x - obstacle.position.x, 2) + pow(path.pose.position.y - obstacle.position.y, 2))                
-                if dis < 2.35: # 장애물의 좌표값이 지역 경로 상의 좌표값과의 직선거리가 2.35 미만일때 충돌이라 판단.
+                if dis < 3.35: # 장애물의 좌표값이 지역 경로 상의 좌표값과의 직선거리가 2.35 미만일때 충돌이라 판단.
                     is_crash = True
                     break
 

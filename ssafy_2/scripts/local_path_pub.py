@@ -35,7 +35,7 @@ class local_path_pub :
         self.is_path = False
 
         #TODO: (3) Local Path 의 Size 결정
-        self.local_path_size=100
+        self.local_path_size=50
 
         rate = rospy.Rate(20) # 20hz
         while not rospy.is_shutdown():

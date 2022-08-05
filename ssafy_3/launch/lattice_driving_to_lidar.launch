@@ -8,7 +8,7 @@
     <node pkg="ssafy_3" type="advanced_purepursuit.py" name="advanced_purepursuit"  />
 
 
-    <!-- <node pkg="ssafy_3" type="lidar_velodyne_cluster.py" name="lidar_velodyne_cluster"  /> -->
+    <node pkg="ssafy_3" type="lidar_velodyne_cluster.py" name="lidar_velodyne_cluster"  />
     <node pkg="ssafy_3" type="lidar_velodyne_cluster_viz.py" name="lidar_velodyne_cluster_viz"  />
 
     <include file="$(find velodyne_pointcloud)/launch/VLP16_points.launch"/>
