@@ -76,7 +76,7 @@ class pure_pursuit :
             if self.is_path == True and self.is_odom == True and self.is_status == True:
 
                 # global_obj,local_obj
-                result = self.calc_vaild_obj(self.status_msg,self.object_data)
+                result = self.calc_vaild_obj([self.current_postion.x,self.current_postion.y,self.vehicle_yaw],self.object_data)
                 
                 global_npc_info = result[0] 
                 local_npc_info = result[1] 
@@ -85,7 +85,7 @@ class pure_pursuit :
                 global_obs_info = result[4] 
                 local_obs_info = result[5] 
                 
-                self.current_waypoint = self.get_current_waypoint(self.status_msg,self.global_path)
+                self.current_waypoint = self.get_current_waypoint([self.current_postion.x,self.current_postion.y],self.global_path)
                 self.target_velocity = self.velocity_list[self.current_waypoint]*3.6
 
                 steering = self.calc_pure_pursuit()
@@ -142,10 +142,14 @@ class pure_pursuit :
 
     def get_current_waypoint(self,ego_status,global_path):
         min_dist = float('inf')        
-        currnet_waypoint = -1
+        currnet_waypoint = -1     
+
+        ego_pose_x = ego_status[0]
+        ego_pose_y = ego_status[1]
+
         for i,pose in enumerate(global_path.poses):
-            dx = ego_status.position.x - pose.pose.position.x
-            dy = ego_status.position.y - pose.pose.position.y
+            dx = ego_pose_x - pose.pose.position.x
+            dy = ego_pose_y - pose.pose.position.y
 
             dist = sqrt(pow(dx,2)+pow(dy,2))
             if min_dist > dist :
@@ -156,9 +160,9 @@ class pure_pursuit :
     def calc_vaild_obj(self,status_msg,object_data):
         
         self.all_object = object_data        
-        ego_pose_x = status_msg.position.x
-        ego_pose_y = status_msg.position.y
-        ego_heading = status_msg.heading/180*pi
+        ego_pose_x = status_msg[0]
+        ego_pose_y = status_msg[1]
+        ego_heading = status_msg[2]
         
         global_npc_info = []
         local_npc_info  = []
