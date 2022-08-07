@@ -4,8 +4,8 @@
     <node pkg="ssafy_2" type="global_path_pub.py" name="global_path_pub"  />
     <node pkg="ssafy_2" type="local_path_pub.py" name="local_path_pub" />    
     <node pkg="ssafy_2" type="tf_pub.py" name="tf"  />
-    <node pkg="ssafy_3" type="lattice_planner.py" name="lattice_planner" output="screen"/>
-    <node pkg="ssafy_3" type="advanced_purepursuit.py" name="advanced_purepursuit"  />
+    <node pkg="ssafy_3" type="lattice_planner.py" name="lattice_planner" output="screen" args="/Object_topic_to_lidar"/>
+    <node pkg="ssafy_3" type="advanced_purepursuit.py" name="advanced_purepursuit"  args="/lattice_path"/>
 
 
     <node pkg="ssafy_3" type="lidar_velodyne_cluster.py" name="lidar_velodyne_cluster"  />

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os
+import os, sys
 import time
 import rospy
 import rospkg
@@ -32,11 +32,12 @@ class pure_pursuit :
     def __init__(self):
         rospy.init_node('pure_pursuit', anonymous=True)
 
+        arg = rospy.myargv(argv=sys.argv)
+        local_path_name = arg[1]
+
         #TODO: (1) subscriber, publisher 선언
-        rospy.Subscriber("/global_path", Path, self.global_path_callback) 
-        # rospy.Subscriber("/local_path", Path, self.path_callback)
-        # rospy.Subscriber("/lane_path", Path, self.path_callback)
-        rospy.Subscriber("/lattice_path", Path, self.path_callback)
+        rospy.Subscriber("/global_path", Path, self.global_path_callback)
+        rospy.Subscriber(local_path_name, Path, self.path_callback)
         rospy.Subscriber("/odom", Odometry, self.odom_callback)
         rospy.Subscriber("/Ego_topic",EgoVehicleStatus, self.status_callback) 
         self.ctrl_cmd_pub = rospy.Publisher('ctrl_cmd',CtrlCmd, queue_size=1)
@@ -59,7 +60,7 @@ class pure_pursuit :
         self.min_lfd = 5
         self.max_lfd = 30
         self.lfd_gain = 0.78
-        self.target_velocity = 40
+        self.target_velocity = 30
 
         self.pid = pidControl()
         self.vel_planning = velocityPlanning(self.target_velocity/3.6, 0.15)
@@ -180,7 +181,7 @@ class pure_pursuit :
 class pidControl:
     def __init__(self):
         self.p_gain = 0.3
-        self.i_gain = 0.07
+        self.i_gain = 0.00
         self.d_gain = 0.03
         self.prev_error = 0
         self.i_control = 0

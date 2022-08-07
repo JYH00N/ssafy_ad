@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os, sys
 import rospy
 from math import cos,sin,pi,sqrt,pow,atan2
 from morai_msgs.msg  import EgoVehicleStatus,ObjectStatusList
@@ -22,11 +23,13 @@ class latticePlanner:
     def __init__(self):
         rospy.init_node('lattice_planner', anonymous=True)
 
+        arg = rospy.myargv(argv=sys.argv)
+        object_topic_name = arg[1]
+
         #TODO: (1) subscriber, publisher 선언
         rospy.Subscriber("/local_path", Path, self.path_callback)
         rospy.Subscriber("/Ego_topic",EgoVehicleStatus, self.status_callback)
-        # rospy.Subscriber("/Object_topic",ObjectStatusList, self.object_callback)
-        rospy.Subscriber("/Object_topic_to_lidar",ObjectStatusList, self.object_callback)
+        rospy.Subscriber(object_topic_name,ObjectStatusList, self.object_callback)
 
         self.lattice_path_pub = rospy.Publisher('/lattice_path', Path, queue_size = 1)
 

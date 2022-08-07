@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os, sys
 import rospy
 import rospkg
 import tf
@@ -28,12 +29,14 @@ class lc_path_pub :
     def __init__(self):
         rospy.init_node('lc_path_pub', anonymous=True)
 
+        arg = rospy.myargv(argv=sys.argv)
+        object_topic_name = arg[1]
+
         #TODO: (1) subscriber, publisher 선언
         rospy.Subscriber("odom", Odometry, self.odom_callback)
-        rospy.Subscriber("/Object_topic", ObjectStatusList, self.object_info_callback)
-        # rospy.Subscriber("/Object_topic_to_lidar", ObjectStatusList, self.object_info_callback)
+        rospy.Subscriber(object_topic_name, ObjectStatusList, self.object_info_callback)
         self.global_path_pub = rospy.Publisher('/global_path',Path, queue_size=1)
-        self.local_path_pub = rospy.Publisher('/local_path',Path, queue_size=1)
+        self.local_path_pub = rospy.Publisher('/lane_change_path',Path, queue_size=1)
 
         self.lc_1=Path()
         self.lc_1.header.frame_id='/map'
@@ -42,7 +45,7 @@ class lc_path_pub :
 
         #TODO: (2) 두개의 차선 경로 의 텍스트파일을 읽기 모드로 열기
         rospack=rospkg.RosPack()
-        pkg_path=rospack.get_path('ssafy_2')
+        pkg_path=rospack.get_path('ssafy_3')
         lc_1 = pkg_path+'/path'+'/lc_1.txt'
         self.f=open(lc_1,'r')
         lines=self.f.readlines()
@@ -70,7 +73,7 @@ class lc_path_pub :
         self.is_object_info = False
         self.is_odom = False
 
-        self.local_path_size = 25
+        self.local_path_size = 50
         
         self.lane_change = False        
         self.current_lane = 1
