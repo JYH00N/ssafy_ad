@@ -61,7 +61,7 @@ class SCANCluster:
 
             angle = np.arctan2(point[1], point[0])
 
-            if point[0] > 0 and point[2] > -1.2 and dist < 40:
+            if point[0] > 0 and 1.50 > point[2] > -1.25 and dist < 50:
                 point_list.append((point[0], point[1], point[2], point[3], dist, angle))
 
         point_np = np.array(point_list, np.float32)
