@@ -24,25 +24,29 @@ class SCANCluster:
     def callback(self, msg):
     
         self.pc_np = self.pointcloud2_to_xyz(msg)
+        if len(self.pc_np) == 0:
 
-        pc_xy = self.pc_np[:, :2]
+            cluster_msg = PoseArray()
 
-        db = self.dbscan.fit_predict(pc_xy)
+        else:
+            pc_xy = self.pc_np[:, :2]
 
-        n_cluster = np.max(db) + 1
+            db = self.dbscan.fit_predict(pc_xy)
 
-        cluster_msg = PoseArray()
+            n_cluster = np.max(db) + 1
 
-        cluster_list = []
+            cluster_msg = PoseArray()
 
-        for c in range(n_cluster):
+            cluster_list = []
 
-            c_tmp = np.mean(pc_xy[db==c, :], axis=0)
+            for c in range(n_cluster):
 
-            tmp_pose=Pose()
-            tmp_pose.position.x = c_tmp.tolist()[0]
-            tmp_pose.position.y = c_tmp.tolist()[1]
-            cluster_msg.poses.append(tmp_pose)
+                c_tmp = np.mean(pc_xy[db==c, :], axis=0)
+
+                tmp_pose=Pose()
+                tmp_pose.position.x = c_tmp.tolist()[0]
+                tmp_pose.position.y = c_tmp.tolist()[1]
+                cluster_msg.poses.append(tmp_pose)
 
         self.cluster_pub.publish(cluster_msg)
 
