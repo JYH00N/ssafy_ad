@@ -98,7 +98,7 @@ class pure_pursuit :
                     self.ctrl_cmd_msg.accel = 0.0
                     self.ctrl_cmd_msg.brake = -output
 
-                #TODO: (8) 제어입력 메세지 Publish
+                #TODO: (8) 제어입력 메세지 Publish.
                 self.ctrl_cmd_pub.publish(self.ctrl_cmd_msg)
                 
             rate.sleep()
