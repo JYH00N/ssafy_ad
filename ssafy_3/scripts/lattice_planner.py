@@ -51,6 +51,47 @@ class latticePlanner:
                     self.lattice_path_pub.publish(self.local_path)
             rate.sleep()
 
+    def checkObject(self, ref_path, object_data):
+        #TODO: (2) 경로상의 장애물 탐색
+
+        is_crash = False
+        for obstacle in object_data.obstacle_list:
+            for path in ref_path.poses:  
+                dis = sqrt(pow(path.pose.position.x - obstacle.position.x, 2) + pow(path.pose.position.y - obstacle.position.y, 2))                
+                if dis < 3.35: # 장애물의 좌표값이 지역 경로 상의 좌표값과의 직선거리가 2.35 미만일때 충돌이라 판단.
+                    is_crash = True
+                    break
+
+        return is_crash
+
+    def collision_check(self, object_data, out_path):
+        #TODO: (4) 생성된 충돌회피 경로 중 낮은 비용의 경로 선택
+        
+        selected_lane = -1        
+        lane_weight = [3, 2, 1, 1, 2, 3] #reference path 
+        
+        for obstacle in object_data.obstacle_list:                        
+            for path_num in range(len(out_path)) :                    
+                for path_pos in out_path[path_num].poses :                                
+                    dis = sqrt(pow(obstacle.position.x - path_pos.pose.position.x, 2) + pow(obstacle.position.y - path_pos.pose.position.y, 2))
+                    if dis < 1.5:
+                        lane_weight[path_num] = lane_weight[path_num] + 100
+
+        selected_lane = lane_weight.index(min(lane_weight))                    
+        return selected_lane
+
+    def path_callback(self,msg):
+        self.is_path = True
+        self.local_path = msg  
+        
+    def status_callback(self,msg): ## Vehicl Status Subscriber 
+        self.is_status = True
+        self.status_msg = msg
+
+    def object_callback(self,msg):
+        self.is_obj = True
+        self.object_data = msg
+
     def latticePlanner(self,ref_path, vehicle_status):
         #TODO : (3) 충돌회피 경로 생성
         """
@@ -163,48 +204,6 @@ class latticePlanner:
                 globals()['lattice_pub_{}'.format(i+1)].publish(out_path[i])
         
         return out_path
-
-    def checkObject(self, ref_path, object_data):
-        #TODO: (2) 경로상의 장애물 탐색
-
-        is_crash = False
-        for obstacle in object_data.obstacle_list:
-            for path in ref_path.poses:  
-                dis = sqrt(pow(path.pose.position.x - obstacle.position.x, 2) + pow(path.pose.position.y - obstacle.position.y, 2))                
-                if dis < 3.35: # 장애물의 좌표값이 지역 경로 상의 좌표값과의 직선거리가 2.35 미만일때 충돌이라 판단.
-                    is_crash = True
-                    break
-
-        return is_crash
-
-    def collision_check(self, object_data, out_path):
-        #TODO: (4) 생성된 충돌회피 경로 중 낮은 비용의 경로 선택
-        
-        selected_lane = -1        
-        lane_weight = [3, 2, 1, 1, 2, 3] #reference path 
-        
-        for obstacle in object_data.obstacle_list:                        
-            for path_num in range(len(out_path)) :                    
-                for path_pos in out_path[path_num].poses :                                
-                    dis = sqrt(pow(obstacle.position.x - path_pos.pose.position.x, 2) + pow(obstacle.position.y - path_pos.pose.position.y, 2))
-                    if dis < 1.5:
-                        lane_weight[path_num] = lane_weight[path_num] + 100
-
-        selected_lane = lane_weight.index(min(lane_weight))                    
-        return selected_lane
-
-
-    def path_callback(self,msg):
-        self.is_path = True
-        self.local_path = msg  
-        
-    def status_callback(self,msg): ## Vehicl Status Subscriber 
-        self.is_status = True
-        self.status_msg = msg
-
-    def object_callback(self,msg):
-        self.is_obj = True
-        self.object_data = msg
 
 if __name__ == '__main__':
     try:

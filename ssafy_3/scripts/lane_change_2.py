@@ -85,12 +85,15 @@ class lc_path_pub :
         while not rospy.is_shutdown():
             if self.is_object_info == True and self.is_odom == True:
 
-                global_obj,local_obj = self.calc_vaild_obj([self.x,self.y,(self.vehicle_yaw)])
+                result = self.calc_vaild_obj([self.x,self.y,self.vehicle_yaw],self.object_data)                
+                global_npc_info = result[0] 
+                local_npc_info = result[1] 
+
                 self.local_path_make(global_path)
 
                 currnet_waypoint = self.get_current_waypoint(self.x,self.y,global_path)
 
-                global_path = self.lc_planning(global_obj,local_obj,currnet_waypoint,global_path)
+                global_path = self.lc_planning(global_npc_info,local_npc_info,currnet_waypoint,global_path)
 
                 #TODO: (8) 경로 데이터 Publish
                 self.local_path_pub.publish(self.local_path_msg)
@@ -111,18 +114,7 @@ class lc_path_pub :
 
     def object_info_callback(self,data): ## Object information Subscriber
         self.is_object_info = True
-        self.object_num=data.num_of_npcs
-        object_type=[]
-        object_pose_x=[]
-        object_pose_y=[]
-        object_velocity=[]
-        for num in range(data.num_of_npcs) :
-            object_type.append(data.npc_list[num].type)
-            object_pose_x.append(data.npc_list[num].position.x)
-            object_pose_y.append(data.npc_list[num].position.y)
-            object_velocity.append(data.npc_list[num].velocity.x)
-
-        self.object_info=[object_type,object_pose_x,object_pose_y,object_velocity]   
+        self.object_data = data 
     
     def get_current_waypoint(self,x,y,global_path):
         min_dist = float('inf')        
@@ -169,27 +161,38 @@ class lc_path_pub :
                     self.local_path_msg.poses.append(tmp_pose)
 
 
-    def calc_vaild_obj(self,ego_pose):  # x, y, heading
-        global_object_info=[]
-        loal_object_info=[]
+    def calc_vaild_obj(self,status_msg,object_data):
+        
+        self.all_object = object_data        
+        ego_pose_x = status_msg[0]
+        ego_pose_y = status_msg[1]
+        ego_heading = status_msg[2]
+        
+        global_npc_info = []
+        local_npc_info  = []
 
-        tmp_theta=ego_pose[2]
-        tmp_translation=[ego_pose[0],ego_pose[1]]
-        tmp_t=np.array([[cos(tmp_theta), -sin(tmp_theta),tmp_translation[0]],
-                        [sin(tmp_theta),cos(tmp_theta),tmp_translation[1]],
-                        [0,0,1]])
-        tmp_det_t=np.array([[tmp_t[0][0],tmp_t[1][0],-(tmp_t[0][0]*tmp_translation[0]+tmp_t[1][0]*tmp_translation[1])   ],
-                            [tmp_t[0][1],tmp_t[1][1],-(tmp_t[0][1]*tmp_translation[0]+tmp_t[1][1]*tmp_translation[1])   ],
-                            [0,0,1]])
+        num_of_object = self.all_object.num_of_npcs        
+        if num_of_object > 0:
 
-        for num in range(self.object_num):
-            global_result=np.array([[self.object_info[1][num]],[self.object_info[2][num]],[1]])
-            local_result=tmp_det_t.dot(global_result)
-            if local_result[0][0]> 0 :
-                global_object_info.append([self.object_info[0][num],self.object_info[1][num],self.object_info[2][num],self.object_info[3][num]])
-                loal_object_info.append([self.object_info[0][num],local_result[0][0],local_result[1][0],self.object_info[3][num]])        
+            #translation
+            tmp_theta=ego_heading
+            tmp_translation=[ego_pose_x, ego_pose_y]
+            tmp_t=np.array([[cos(tmp_theta), -sin(tmp_theta), tmp_translation[0]],
+                            [sin(tmp_theta),  cos(tmp_theta), tmp_translation[1]],
+                            [0             ,               0,                  1]])
+            tmp_det_t=np.array([[tmp_t[0][0], tmp_t[1][0], -(tmp_t[0][0] * tmp_translation[0] + tmp_t[1][0]*tmp_translation[1])],
+                                [tmp_t[0][1], tmp_t[1][1], -(tmp_t[0][1] * tmp_translation[0] + tmp_t[1][1]*tmp_translation[1])],
+                                [0,0,1]])
 
-        return global_object_info,loal_object_info
+            #npc vehicle ranslation        
+            for npc_list in self.all_object.npc_list:
+                global_result=np.array([[npc_list.position.x],[npc_list.position.y],[1]])
+                local_result=tmp_det_t.dot(global_result)
+                if local_result[0][0]> 0 :        
+                    global_npc_info.append([npc_list.type,npc_list.position.x,npc_list.position.y,npc_list.velocity.x])
+                    local_npc_info.append([npc_list.type,local_result[0][0],local_result[1][0],npc_list.velocity.x])    
+
+        return global_npc_info, local_npc_info
 
     def lc_planning(self,global_obj,local_obj,currnet_waypoint,global_path):
         #TODO: (5) 장애물이 있다면 주행 경로를 변경 하도록 로직 작성
